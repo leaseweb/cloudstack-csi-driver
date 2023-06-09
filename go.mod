@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/apache/cloudstack-go/v2 v2.15.0
-	github.com/container-storage-interface/spec v1.6.0
+	github.com/container-storage-interface/spec v1.8.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/hashicorp/go-uuid v1.0.3
 	github.com/kubernetes-csi/csi-test/v4 v4.4.0
