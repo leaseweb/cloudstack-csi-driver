@@ -8,7 +8,6 @@ updates:
     labels:
       - dependencies
       - actions
-      - Skip Changelog
     schedule:
       interval: weekly
       day: sunday
@@ -17,7 +16,6 @@ updates:
     labels:
       - dependencies
       - docker
-      - Skip Changelog
     schedule:
       interval: weekly
       day: sunday
@@ -26,7 +24,6 @@ updates:
     labels:
       - dependencies
       - docker
-      - Skip Changelog
     schedule:
       interval: weekly
       day: sunday
@@ -35,7 +32,6 @@ updates:
     labels:
       - dependencies
       - go
-      - Skip Changelog
     schedule:
       interval: weekly
       day: sunday
