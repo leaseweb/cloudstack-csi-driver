@@ -13,7 +13,7 @@ require (
 	google.golang.org/grpc v1.55.0
 	gopkg.in/gcfg.v1 v1.2.3
 	k8s.io/api v0.25.9
-	k8s.io/apimachinery v0.25.9
+	k8s.io/apimachinery v0.25.10
 	k8s.io/client-go v0.25.9
 	k8s.io/mount-utils v0.25.9
 	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2
