@@ -9,7 +9,7 @@ require (
 	github.com/hashicorp/go-uuid v1.0.3
 	github.com/kubernetes-csi/csi-test/v4 v4.4.0
 	go.uber.org/zap v1.24.0
-	golang.org/x/text v0.9.0
+	golang.org/x/text v0.10.0
 	google.golang.org/grpc v1.55.0
 	gopkg.in/gcfg.v1 v1.2.3
 	k8s.io/api v0.25.10
