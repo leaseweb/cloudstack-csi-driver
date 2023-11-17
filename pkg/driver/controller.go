@@ -4,11 +4,15 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"strconv"
+	"time"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
+	"github.com/kubernetes-csi/csi-lib-utils/protosanitizer"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/leaseweb/cloudstack-csi-driver/pkg/cloud"
 	"github.com/leaseweb/cloudstack-csi-driver/pkg/util"
@@ -84,7 +88,7 @@ func (cs *controllerServer) CreateVolume(ctx context.Context, req *csi.CreateVol
 				VolumeId:      vol.ID,
 				CapacityBytes: vol.Size,
 				VolumeContext: req.GetParameters(),
-				// ContentSource: req.GetVolumeContentSource(), TODO: snapshot support
+				ContentSource: req.GetVolumeContentSource(),
 				AccessibleTopology: []*csi.Topology{
 					Topology{ZoneID: vol.ZoneID}.ToCSI(),
 				},
@@ -125,25 +129,46 @@ func (cs *controllerServer) CreateVolume(ctx context.Context, req *csi.CreateVol
 		}
 		zoneID = t.ZoneID
 	}
+	content := req.GetVolumeContentSource()
+	var snapshotID string
 
-	ctxzap.Extract(ctx).Sugar().Infow("Creating new volume",
-		"name", name,
-		"size", sizeInGB,
-		"offering", diskOfferingID,
-		"zone", zoneID,
-	)
+	if content != nil && content.GetSnapshot() != nil {
+		snapshotID = content.GetSnapshot().GetSnapshotId()
+		_, err := cs.connector.GetSnapshotByID(ctx, snapshotID)
+		if err != nil {
+			if err == cloud.ErrNotFound {
+				return nil, status.Errorf(codes.NotFound, "VolumeContentSource Snapshot %s not found", snapshotID)
+			}
+			return nil, status.Errorf(codes.Internal, "Failed to retrieve the snapshot %s: %v", snapshotID, err)
+		} else {
+			ctxzap.Extract(ctx).Sugar().Infow("Creating new volume from snapshot",
+				"name", name,
+				"size", sizeInGB,
+				"offering", diskOfferingID,
+				"zone", zoneID,
+				"snapshotid", snapshotID,
+			)
+		}
+	} else {
+		ctxzap.Extract(ctx).Sugar().Infow("Creating new volume",
+			"name", name,
+			"size", sizeInGB,
+			"offering", diskOfferingID,
+			"zone", zoneID,
+		)
+	}
 
-	volID, err := cs.connector.CreateVolume(ctx, diskOfferingID, zoneID, name, sizeInGB)
+	volumeID, err := cs.connector.CreateVolume(ctx, diskOfferingID, zoneID, name, sizeInGB, snapshotID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Cannot create volume %s: %v", name, err.Error())
 	}
 
 	return &csi.CreateVolumeResponse{
 		Volume: &csi.Volume{
-			VolumeId:      volID,
+			VolumeId:      volumeID,
 			CapacityBytes: util.GigaBytesToBytes(sizeInGB),
 			VolumeContext: req.GetParameters(),
-			// ContentSource: req.GetVolumeContentSource(), TODO: snapshot support
+			ContentSource: req.GetVolumeContentSource(),
 			AccessibleTopology: []*csi.Topology{
 				Topology{ZoneID: zoneID}.ToCSI(),
 			},
@@ -430,6 +455,215 @@ func (cs *controllerServer) ControllerGetCapabilities(ctx context.Context, req *
 					},
 				},
 			},
+			{
+				Type: &csi.ControllerServiceCapability_Rpc{
+					Rpc: &csi.ControllerServiceCapability_RPC{
+						Type: csi.ControllerServiceCapability_RPC_CREATE_DELETE_SNAPSHOT,
+					},
+				},
+			},
+			{
+				Type: &csi.ControllerServiceCapability_Rpc{
+					Rpc: &csi.ControllerServiceCapability_RPC{
+						Type: csi.ControllerServiceCapability_RPC_LIST_SNAPSHOTS,
+					},
+				},
+			},
 		},
+	}, nil
+}
+
+func (cs *controllerServer) CreateSnapshot(ctx context.Context, req *csi.CreateSnapshotRequest) (*csi.CreateSnapshotResponse, error) {
+	ctxzap.Extract(ctx).Sugar().Infow("CreateSnapshot: called with args", "args", protosanitizer.StripSecrets(*req))
+	name := req.Name
+	volumeID := req.GetSourceVolumeId()
+	snapshotCreateLock := util.NewOperationLock(ctx)
+
+	if name == "" {
+		return nil, status.Error(codes.InvalidArgument, "Snapshot name must be provided in CreateSnapshot request")
+	}
+
+	if volumeID == "" {
+		return nil, status.Error(codes.InvalidArgument, "VolumeID must be provided in CreateSnapshot request")
+	}
+
+	err := snapshotCreateLock.GetSnapshotCreateLock(volumeID)
+	if err != nil {
+
+		ctxzap.Extract(ctx).Sugar().Errorf(util.VolumeOperationAlreadyExistsFmt, volumeID)
+		return nil, status.Errorf(codes.Aborted, util.VolumeOperationAlreadyExistsFmt, volumeID)
+	}
+	defer snapshotCreateLock.ReleaseSnapshotCreateLock(volumeID)
+
+	// Check if a snapshot with that name already exists
+	if snap, err := cs.connector.GetSnapshotByName(ctx, name); err == cloud.ErrNotFound {
+		// The snapshot does not exist
+	} else if err != nil {
+		// Error with CloudStack
+		return nil, status.Errorf(codes.Internal, "CloudStack error: %v", err)
+	} else {
+		// The snapshot exists. Check if it suits the request.
+		if snap.VolumeID != volumeID {
+			// Snapshot exists with a different source volume ID
+			return nil, status.Errorf(codes.AlreadyExists, "Snapshot with given name already exists, with different source volume ID")
+		}
+		s, err := toCSISnapshot(snap)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal,
+				"couldn't convert CloudStack snapshot to CSI snapshot: %s", err.Error())
+		}
+		// Existing snapshot is ok
+		return &csi.CreateSnapshotResponse{
+			Snapshot: s,
+		}, nil
+	}
+
+	// Verify a snapshot with the provided name doesn't already exist for this domain
+	var snap *cloud.Snapshot
+	filters := map[string]string{}
+	filters["Name"] = name
+	snapshots, _, err := cs.connector.ListSnapshots(ctx, filters)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Failed to get snapshots")
+	}
+
+	if len(snapshots) == 1 {
+		snap = &snapshots[0]
+
+		if snap.VolumeID != volumeID {
+			return nil, status.Error(codes.AlreadyExists, "Snapshot with given name already exists, with different source volume ID")
+		}
+	} else if len(snapshots) > 1 {
+		return nil, status.Errorf(codes.Internal, "Multiple snapshots reported by CSI with same name(%s)", name)
+
+	} else {
+		snapID, err := cs.connector.CreateSnapshot(ctx, name, volumeID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "Cannot create volume %s: %v", name, err.Error())
+		}
+		snap, err = cs.connector.GetSnapshotByID(ctx, snapID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "Cannot find snapshot %s: %v", snap.Name, err.Error())
+		}
+
+		fmt.Printf("CreateSnapshot %s with ID %s from volume with ID: %s", name, snapID, volumeID)
+	}
+
+	s, err := toCSISnapshot(snap)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal,
+			"couldn't convert CloudStack snapshot to CSI snapshot: %s", err.Error())
+	}
+	err = cs.connector.WaitSnapshotReady(ctx, snap.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("CreateSnapshot failed with error %v", err))
+	}
+
+	return &csi.CreateSnapshotResponse{
+		Snapshot: s,
+	}, nil
+}
+
+func (cs *controllerServer) DeleteSnapshot(ctx context.Context, req *csi.DeleteSnapshotRequest) (*csi.DeleteSnapshotResponse, error) {
+	ctxzap.Extract(ctx).Sugar().Infow("DeleteSnapshot called with args", "args", protosanitizer.StripSecrets(*req))
+
+	snapshotDeleteLock := util.NewOperationLock(ctx)
+	snapshotID := req.GetSnapshotId()
+	if snapshotID == "" {
+		return nil, status.Error(codes.InvalidArgument, "DeleteSnapshot Snapshot ID must be provided")
+	}
+
+	errLock := snapshotDeleteLock.GetSnapshotDeleteLock(snapshotID)
+	if errLock != nil {
+		ctxzap.Extract(ctx).Sugar().Errorf(util.SnapshotOperationAlreadyExistsFmt, snapshotID)
+		return nil, status.Errorf(codes.Aborted, util.SnapshotOperationAlreadyExistsFmt, snapshotID)
+	}
+	defer snapshotDeleteLock.ReleaseSnapshotDeleteLock(snapshotID)
+
+	err := cs.connector.DeleteSnapshot(ctx, snapshotID)
+	if err != nil && err != cloud.ErrNotFound {
+		return nil, status.Errorf(codes.Internal, "Cannot delete volume %s: %s", snapshotID, err.Error())
+	}
+	return &csi.DeleteSnapshotResponse{}, nil
+}
+
+func (cs *controllerServer) ListSnapshots(ctx context.Context, req *csi.ListSnapshotsRequest) (*csi.ListSnapshotsResponse, error) {
+	snapshotID := req.GetSnapshotId()
+	if len(snapshotID) != 0 {
+		snap, err := cs.connector.GetSnapshotByID(ctx, snapshotID)
+		if err != nil {
+			if err == cloud.ErrNotFound {
+				fmt.Printf("Snapshot %s not found", snapshotID)
+				return &csi.ListSnapshotsResponse{}, nil
+			}
+			return nil, status.Errorf(codes.Internal, "Failed to GetSnapshot %s: %v", snapshotID, err)
+		}
+
+		s, err := toCSISnapshot(snap)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "Couldn't convert CloudStack snapshot to CSI snapshot: %s", err.Error())
+		}
+		entry := &csi.ListSnapshotsResponse_Entry{
+			Snapshot: s,
+		}
+
+		entries := []*csi.ListSnapshotsResponse_Entry{entry}
+		return &csi.ListSnapshotsResponse{
+			Entries: entries,
+		}, nil
+
+	}
+
+	filters := map[string]string{}
+	if volID := req.GetSourceVolumeId(); len(volID) != 0 {
+		filters["VolumeID"] = volID
+	}
+
+	var maxEntries int32
+	if req.MaxEntries > 0 {
+		maxEntries = req.MaxEntries
+	}
+
+	//  Marker is the last-seen item and Limit is a page size
+	filters["Limit"] = strconv.Itoa(int(maxEntries))
+	filters["Marker"] = req.StartingToken
+
+	// Fetch all snapshots from CloudStack
+	allSnapshotsList, nextPageToken, err := cs.connector.ListSnapshots(ctx, filters)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "error listing snapshots: %v", err)
+	}
+	var sentries []*csi.ListSnapshotsResponse_Entry
+	for _, v := range allSnapshotsList {
+		s, err := toCSISnapshot(&v)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "couldn't convert CloudStack snapshot to CSI snapshot: %s", err.Error())
+		}
+		sentry := &csi.ListSnapshotsResponse_Entry{
+			Snapshot: s,
+		}
+		sentries = append(sentries, sentry)
+	}
+	return &csi.ListSnapshotsResponse{
+		Entries:   sentries,
+		NextToken: nextPageToken,
+	}, nil
+}
+
+// toCSISnapshot converts a CloudStack Snapshot struct into a csi.Snapshot struct
+func toCSISnapshot(snap *cloud.Snapshot) (*csi.Snapshot, error) {
+	createdAt, err := time.Parse("2006-01-02T15:04:05-0700", snap.Created)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't parse snapshot's created field: %s", err.Error())
+	}
+
+	tstamp := timestamppb.New(createdAt)
+	return &csi.Snapshot{
+		SizeBytes:       int64(snap.VirtualSize),
+		SnapshotId:      snap.ID,
+		SourceVolumeId:  snap.VolumeID,
+		CreationTime:    tstamp,
+		ReadyToUse:      true,
+		GroupSnapshotId: "",
 	}, nil
 }

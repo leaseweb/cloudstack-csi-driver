@@ -1,13 +1,11 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: example-pod
+  name: example-pod-from-snapshot-data
 spec:
   containers:
     - name: example
       image: busybox
-      command: ["/bin/sh"]
-      args: ["-c", "while true; do date >> /data/date.txt; sleep 5; done"]
       volumeMounts:
         - mountPath: "/data"
           name: example-volume
@@ -17,4 +15,4 @@ spec:
   volumes:
     - name: example-volume
       persistentVolumeClaim:
-        claimName: example-pvc
+        claimName: pvc-from-snapshot

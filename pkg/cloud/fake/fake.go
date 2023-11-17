@@ -4,6 +4,8 @@ package fake
 
 import (
 	"context"
+	"strconv"
+	"time"
 
 	"github.com/hashicorp/go-uuid"
 
@@ -12,11 +14,14 @@ import (
 )
 
 const zoneID = "a1887604-237c-4212-a9cd-94620b7880fa"
+const snapshotReadyStatus = "BackedUp"
 
 type fakeConnector struct {
-	node          *cloud.VM
-	volumesByID   map[string]cloud.Volume
-	volumesByName map[string]cloud.Volume
+	node            *cloud.VM
+	volumesByID     map[string]cloud.Volume
+	volumesByName   map[string]cloud.Volume
+	snapshotsByID   map[string]cloud.Snapshot
+	snapshotsByName map[string]cloud.Snapshot
 }
 
 // New returns a new fake implementation of the
@@ -31,14 +36,25 @@ func New() cloud.Interface {
 		VirtualMachineID: "",
 		DeviceID:         "",
 	}
+	snapshot := cloud.Snapshot{
+		ID:          "fc8621ac-168f-4f51-b3cf-c11681609c12",
+		Created:     "2006-01-02T15:04:05-0700",
+		Name:        "snapshot-1",
+		VolumeID:    "CSIVolumeID",
+		ZoneID:      zoneID,
+		VirtualSize: 10,
+		State:       "Backedup",
+	}
 	node := &cloud.VM{
 		ID:     "0d7107a3-94d2-44e7-89b8-8930881309a5",
 		ZoneID: zoneID,
 	}
 	return &fakeConnector{
-		node:          node,
-		volumesByID:   map[string]cloud.Volume{volume.ID: volume},
-		volumesByName: map[string]cloud.Volume{volume.Name: volume},
+		node:            node,
+		volumesByID:     map[string]cloud.Volume{volume.ID: volume},
+		volumesByName:   map[string]cloud.Volume{volume.Name: volume},
+		snapshotsByID:   map[string]cloud.Snapshot{snapshot.ID: snapshot},
+		snapshotsByName: map[string]cloud.Snapshot{snapshot.Name: snapshot},
 	}
 }
 
@@ -73,14 +89,26 @@ func (f *fakeConnector) GetVolumeByName(ctx context.Context, name string) (*clou
 	return nil, cloud.ErrNotFound
 }
 
-func (f *fakeConnector) CreateVolume(ctx context.Context, diskOfferingID, zoneID, name string, sizeInGB int64) (string, error) {
+func (f *fakeConnector) CreateVolume(ctx context.Context, diskOfferingID, zoneID, name string, sizeInGB int64, snapshotID string) (string, error) {
 	id, _ := uuid.GenerateUUID()
-	vol := cloud.Volume{
-		ID:             id,
-		Name:           name,
-		Size:           util.GigaBytesToBytes(sizeInGB),
-		DiskOfferingID: diskOfferingID,
-		ZoneID:         zoneID,
+	vol := cloud.Volume{}
+	if snapshotID != "" {
+		vol = cloud.Volume{
+			ID:             id,
+			Name:           name,
+			Size:           util.GigaBytesToBytes(sizeInGB),
+			DiskOfferingID: diskOfferingID,
+			ZoneID:         zoneID,
+			SnapshotID:     snapshotID,
+		}
+	} else {
+		vol = cloud.Volume{
+			ID:             id,
+			Name:           name,
+			Size:           util.GigaBytesToBytes(sizeInGB),
+			DiskOfferingID: diskOfferingID,
+			ZoneID:         zoneID,
+		}
 	}
 	f.volumesByID[vol.ID] = vol
 	f.volumesByName[vol.Name] = vol
@@ -102,4 +130,92 @@ func (f *fakeConnector) AttachVolume(ctx context.Context, volumeID, vmID string)
 
 func (f *fakeConnector) DetachVolume(ctx context.Context, volumeID string) error {
 	return nil
+}
+
+func (f *fakeConnector) CreateSnapshot(ctx context.Context, name, volID string) (string, error) {
+	id, _ := uuid.GenerateUUID()
+	createdAt := time.Now().Format("2006-01-02T15:04:05-0700")
+
+	snap := cloud.Snapshot{
+		ID:       id,
+		Name:     name,
+		VolumeID: volID,
+		Created:  createdAt,
+		State:    "Backedup",
+	}
+	f.snapshotsByID[snap.ID] = snap
+	f.snapshotsByName[snap.Name] = snap
+	return snap.ID, nil
+}
+
+func (f *fakeConnector) DeleteSnapshot(ctx context.Context, snapID string) error {
+	if snap, ok := f.snapshotsByID[snapID]; ok {
+		name := snap.Name
+		delete(f.snapshotsByName, name)
+	}
+	delete(f.snapshotsByID, snapID)
+	return nil
+}
+
+func (f *fakeConnector) WaitSnapshotReady(ctx context.Context, snapshotName string) error {
+	snap, ok := f.snapshotsByName[snapshotName]
+	if ok && snap.State == snapshotReadyStatus {
+		return nil
+	}
+	return nil
+}
+
+func (f *fakeConnector) GetSnapshotByID(ctx context.Context, snapshotID string) (*cloud.Snapshot, error) {
+	snap, ok := f.snapshotsByID[snapshotID]
+	if ok {
+		return &snap, nil
+	}
+	return nil, cloud.ErrNotFound
+}
+
+func (f *fakeConnector) GetSnapshotByName(ctx context.Context, name string) (*cloud.Snapshot, error) {
+	snap, ok := f.snapshotsByName[name]
+	if ok {
+		return &snap, nil
+	}
+	return nil, cloud.ErrNotFound
+}
+
+func (f *fakeConnector) ListSnapshots(ctx context.Context, filters map[string]string) ([]cloud.Snapshot, string, error) {
+	var snaplist []cloud.Snapshot
+
+	name := filters["Name"]
+	volumeID := filters["VolumeID"]
+	startingToken := filters["Marker"]
+	limitfilter := filters["Limit"]
+	limit, _ := strconv.Atoi(limitfilter)
+
+	for _, value := range f.snapshotsByID {
+		if volumeID != "" {
+			if value.VolumeID == volumeID {
+				snaplist = append(snaplist, value)
+				break
+			}
+		} else if name != "" {
+			if value.Name == name {
+				snaplist = append(snaplist, value)
+				break
+			}
+		} else {
+			snaplist = append(snaplist, value)
+		}
+	}
+
+	if startingToken != "" && len(snaplist) > limit {
+		t, _ := strconv.Atoi(startingToken)
+		snaplist = snaplist[t:]
+	}
+
+	var nextPageToken string
+
+	if limit != 0 {
+		snaplist = snaplist[:limit]
+		nextPageToken = limitfilter
+	}
+	return snaplist, nextPageToken, nil
 }
