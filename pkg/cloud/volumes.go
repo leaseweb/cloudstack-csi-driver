@@ -66,18 +66,31 @@ func (c *client) GetVolumeByName(ctx context.Context, name string) (*Volume, err
 	return &v, nil
 }
 
-func (c *client) CreateVolume(ctx context.Context, diskOfferingID, zoneID, name string, sizeInGB int64) (string, error) {
+func (c *client) CreateVolume(ctx context.Context, diskOfferingID, zoneID, name string, sizeInGB int64, snapshotID string) (string, error) {
 	p := c.Volume.NewCreateVolumeParams()
-	p.SetDiskofferingid(diskOfferingID)
 	p.SetZoneid(zoneID)
 	p.SetName(name)
 	p.SetSize(sizeInGB)
-	ctxzap.Extract(ctx).Sugar().Infow("CloudStack API call", "command", "CreateVolume", "params", map[string]string{
-		"diskofferingid": diskOfferingID,
-		"zoneid":         zoneID,
-		"name":           name,
-		"size":           strconv.FormatInt(sizeInGB, 10),
-	})
+	if snapshotID != "" {
+		// No need to set Disk Offering ID for creating volume from snapshot.
+		// Disk Offering ID cannot be passed whilst creating volume from snapshot other than ROOT disk snapshots.
+		p.SetSnapshotid(snapshotID)
+		ctxzap.Extract(ctx).Sugar().Infow("CloudStack API call", "command", "CreateVolume", "params", map[string]string{
+			"diskofferingid": diskOfferingID,
+			"zoneid":         zoneID,
+			"name":           name,
+			"size":           strconv.FormatInt(sizeInGB, 10),
+			"snapshotid":     snapshotID,
+		})
+	} else {
+		p.SetDiskofferingid(diskOfferingID)
+		ctxzap.Extract(ctx).Sugar().Infow("CloudStack API call", "command", "CreateVolume", "params", map[string]string{
+			"diskofferingid": diskOfferingID,
+			"zoneid":         zoneID,
+			"name":           name,
+			"size":           strconv.FormatInt(sizeInGB, 10),
+		})
+	}
 	vol, err := c.Volume.CreateVolume(p)
 	if err != nil {
 		return "", err

@@ -64,14 +64,50 @@ func (vl *VolumeLocks) Release(volumeID string) {
 	vl.locks.Delete(volumeID)
 }
 
+// SnapshotLocks implements a map with atomic operations. It stores a set of all snapshot IDs
+// with an ongoing operation.
+type SnapshotLocks struct {
+	locks sets.Set[string]
+	mux   sync.Mutex
+}
+
+// NewSnapshotLocks returns new SnapshotLocks.
+func NewSnapshotLocks() *SnapshotLocks {
+	return &SnapshotLocks{
+		locks: sets.New[string](),
+	}
+}
+
+// TryAcquire tries to acquire the lock for operating on SnapshotLocks and returns true if successful.
+// If another operation is already using SnapshotLocks, returns false.
+func (sl *SnapshotLocks) TryAcquire(snapshotID string) bool {
+	sl.mux.Lock()
+	defer sl.mux.Unlock()
+	if sl.locks.Has(snapshotID) {
+		return false
+	}
+	sl.locks.Insert(snapshotID)
+
+	return true
+}
+
+// Release deletes the lock on SnapshotLocks.
+func (sl *SnapshotLocks) Release(snapshotID string) {
+	sl.mux.Lock()
+	defer sl.mux.Unlock()
+	sl.locks.Delete(snapshotID)
+}
+
 type operation string
 
 const (
-	createOp  operation = "create"
-	deleteOp  operation = "delete"
-	cloneOpt  operation = "clone"
-	restoreOp operation = "restore"
-	expandOp  operation = "expand"
+	createOp           operation = "create"
+	deleteOp           operation = "delete"
+	cloneOpt           operation = "clone"
+	restoreOp          operation = "restore"
+	expandOp           operation = "expand"
+	templateCreationOp operation = "templatecreation"
+	volumeCreationOp   operation = "volumecreation"
 )
 
 // OperationLock implements a map with atomic operations.
@@ -178,6 +214,47 @@ func (ol *OperationLock) tryAcquire(op operation, volumeID string) error {
 	return nil
 }
 
+// snapshotTryAcquire tries to acquire the lock for operating on snapshotID and returns true if successful.
+// If another operation is already using snapshotID, returns false.
+func (ol *OperationLock) snapshotTryAcquire(op operation, snapshotID string) error {
+	ol.mux.Lock()
+	defer ol.mux.Unlock()
+	switch op {
+	case deleteOp:
+		// During delete operation the snapshot should not be under template creation or volume creation.
+		// Check any template creation operation is going on for given snapshotID
+		if _, ok := ol.locks[templateCreationOp][snapshotID]; ok {
+			return fmt.Errorf("an Create Template operation with given id %s already exists", snapshotID)
+		}
+		// Check any volume creation operation is going on for given snapshotID
+		if _, ok := ol.locks[volumeCreationOp][snapshotID]; ok {
+			return fmt.Errorf("a Create Volume operation with given id %s already exists", snapshotID)
+		}
+		ol.locks[deleteOp][snapshotID] = 1
+	case templateCreationOp:
+		// During Template creation operation, controller make sure no volume snapshot deletion happens on the
+		// referred snapshot, so we are safe from source snapshot delete.
+		// check any delete operation is going on for given snapshot ID
+		if _, ok := ol.locks[deleteOp][snapshotID]; ok {
+			return fmt.Errorf("a Delete operation with given id %s already exists", snapshotID)
+		}
+		// increment the counter for Templare Creation operation
+		val := ol.locks[templateCreationOp][snapshotID]
+		ol.locks[cloneOpt][snapshotID] = val + 1
+	case volumeCreationOp:
+		// During Volume Creation operation the snapshot should not be deleted
+		// check any delete operation is going on for given snapshot ID
+		if _, ok := ol.locks[deleteOp][snapshotID]; ok {
+			return fmt.Errorf("a Delete operation with given id %s already exists", snapshotID)
+		}
+		ol.locks[volumeCreationOp][snapshotID] = 1
+	default:
+		return fmt.Errorf("%v operation not supported", op)
+	}
+
+	return nil
+}
+
 // GetSnapshotCreateLock gets the snapshot lock on given volumeID.
 func (ol *OperationLock) GetSnapshotCreateLock(volumeID string) error {
 	return ol.tryAcquire(createOp, volumeID)
@@ -206,6 +283,11 @@ func (ol *OperationLock) GetExpandLock(volumeID string) error {
 	return ol.tryAcquire(expandOp, volumeID)
 }
 
+// GetSnapshotDeleteLock gets the snapshot lock on given snapshotID.
+func (ol *OperationLock) GetSnapshotDeleteLock(snapshotID string) error {
+	return ol.snapshotTryAcquire(deleteOp, snapshotID)
+}
+
 // ReleaseSnapshotCreateLock releases the create lock on given volumeID.
 func (ol *OperationLock) ReleaseSnapshotCreateLock(volumeID string) {
 	ol.release(createOp, volumeID)
@@ -231,6 +313,11 @@ func (ol *OperationLock) ReleaseExpandLock(volumeID string) {
 	ol.release(expandOp, volumeID)
 }
 
+// ReleaseDeleteLock releases the delete lock on given snapshotID.
+func (ol *OperationLock) ReleaseSnapshotDeleteLock(snapshotID string) {
+	ol.releaseSnapshot(deleteOp, snapshotID)
+}
+
 // release deletes the lock on volumeID.
 func (ol *OperationLock) release(op operation, volumeID string) {
 	ol.mux.Lock()
@@ -242,6 +329,24 @@ func (ol *OperationLock) release(op operation, volumeID string) {
 			ol.locks[op][volumeID] = val - 1
 			if ol.locks[op][volumeID] == 0 {
 				delete(ol.locks[op], volumeID)
+			}
+		}
+	default:
+		ctxzap.Extract(ol.ctx).Sugar().Errorf("%v operation not supported", op)
+	}
+}
+
+// releaseSnapshot deletes the lock on snapshotID.
+func (ol *OperationLock) releaseSnapshot(op operation, snapshotID string) {
+	ol.mux.Lock()
+	defer ol.mux.Unlock()
+	switch op {
+	case templateCreationOp, volumeCreationOp, deleteOp:
+		if val, ok := ol.locks[op][snapshotID]; ok {
+			// decrement the counter for operation
+			ol.locks[op][snapshotID] = val - 1
+			if ol.locks[op][snapshotID] == 0 {
+				delete(ol.locks[op], snapshotID)
 			}
 		}
 	default:

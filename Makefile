@@ -31,7 +31,7 @@ clean:
 .PHONY: build-%
 $(CMDS:%=build-%): build-%:
 	mkdir -p bin 
-	CGO_ENABLED=0 go build -ldflags '$(FULL_LDFLAGS)' -o "./bin/$*" ./cmd/$*
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags '$(FULL_LDFLAGS)' -o "./bin/$*" ./cmd/$*
 
 .PHONY: container-%
 $(CMDS:%=container-%): container-%: build-%

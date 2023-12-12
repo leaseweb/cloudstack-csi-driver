@@ -1,3 +1,5 @@
+# In this YAML file CloudStack CSI Controller contains the following sidecars:
+# external-attacher, external-provisioner, external-snapshotter, liveness-probe
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -104,6 +106,26 @@ spec:
           volumeMounts:
             - name: socket-dir
               mountPath: /var/lib/csi/sockets/pluginproxy/
+
+        - name: external-snapshotter
+          image: registry.k8s.io/sig-storage/csi-snapshotter:v6.3.1
+          imagePullPolicy: IfNotPresent
+          args:
+          - --v=4
+          - --csi-address=$(ADDRESS)
+          - --timeout=300s
+          - --leader-election
+          - --leader-election-lease-duration=120s
+          - --leader-election-renew-deadline=60s
+          - --leader-election-retry-period=30s
+          - --kube-api-qps=100
+          - --kube-api-burst=100
+          env:
+          - name: ADDRESS
+            value: /var/lib/csi/sockets/pluginproxy/csi.sock
+          volumeMounts:
+          - mountPath: /var/lib/csi/sockets/pluginproxy/
+            name: socket-dir
 
         - name: liveness-probe
           image: registry.k8s.io/sig-storage/livenessprobe:v2.10.0

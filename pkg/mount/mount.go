@@ -5,7 +5,6 @@ package mount
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -107,11 +106,11 @@ func (m *mounter) probeVolume(ctx context.Context) {
 	log.Debug("Scaning SCSI host...")
 
 	scsiPath := "/sys/class/scsi_host/"
-	if dirs, err := ioutil.ReadDir(scsiPath); err == nil {
+	if dirs, err := os.ReadDir(scsiPath); err == nil {
 		for _, f := range dirs {
 			name := scsiPath + f.Name() + "/scan"
 			data := []byte("- - -")
-			if err = ioutil.WriteFile(name, data, 0666); err != nil {
+			if err = os.WriteFile(name, data, 0666); err != nil {
 				log.Warnf("Failed to rescan scsi host %s", name)
 			}
 		}
