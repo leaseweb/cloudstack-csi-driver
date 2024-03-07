@@ -1,7 +1,5 @@
 # Leaseweb Cloudstack CSI Helm Charts
- [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0) [![Releases downloads](https://img.shields.io/github/downloads/Leaseweb/cloudstack-csi-driver/total.svg)](https://github.com/Leaseweb/cloudstack-csi-driver/releases)
-
- <!-- ![Release Charts](https://github.com/Leaseweb/cloudstack-csi-driver/actions/workflows/charts-release.yaml/badge.svg?branch=main) -->
+ [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0) [![Releases downloads](https://img.shields.io/github/downloads/Leaseweb/cloudstack-csi-driver/total.svg)](https://github.com/Leaseweb/cloudstack-csi-driver/releases) ![Release Charts](https://github.com/Leaseweb/cloudstack-csi-driver/actions/workflows/charts-release.yaml/badge.svg?branch=master)
 
 This functionality is in beta and is subject to change. The code is provided as-is with no warranties. Beta features are not subject to the support SLA of official GA features.
 
@@ -34,4 +32,4 @@ helm repo add cloudstack-csi https://leaseweb.github.io/cloudstack-csi-driver
 
 ## Helm charts build status
 
-<!-- ![Release Charts](https://github.com/Leaseweb/cloudstack-csi-driver/actions/workflows/release-charts.yml/badge.svg?branch=add-csi-charts) -->
+![Release Charts](https://github.com/Leaseweb/cloudstack-csi-driver/actions/workflows/charts-release.yaml/badge.svg?branch=master)
