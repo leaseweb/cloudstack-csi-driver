@@ -2,6 +2,21 @@ apiVersion: v1
 entries:
   cloudstack-csi:
   - apiVersion: v2
+    appVersion: 0.4.1
+    created: "2024-03-22T06:47:26.121817313Z"
+    description: A Helm chart for Kubernetes
+    digest: a33b34fa7f71aa6ae68dc84f3d0c11dd0f4d89c6b57b416b417d3da64cc2378b
+    keywords:
+    - csi
+    - cloudStack
+    name: cloudstack-csi
+    sources:
+    - https://github.com/Leaseweb/cloudstack-csi-driver
+    type: application
+    urls:
+    - https://github.com/Leaseweb/cloudstack-csi-driver/releases/download/cloudstack-csi-1.0.2/cloudstack-csi-1.0.2.tgz
+    version: 1.0.2
+  - apiVersion: v2
     appVersion: 0.4.0
     created: "2024-03-13T12:00:18.594400623Z"
     description: A Helm chart for Kubernetes
@@ -31,4 +46,4 @@ entries:
     urls:
     - https://github.com/Leaseweb/cloudstack-csi-driver/releases/download/cloudstack-csi-1.0.0/cloudstack-csi-1.0.0.tgz
     version: 1.0.0
-generated: "2024-03-13T12:00:18.594412676Z"
+generated: "2024-03-22T06:47:26.121828804Z"
