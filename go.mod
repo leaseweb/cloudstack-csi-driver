@@ -13,9 +13,9 @@ require (
 	golang.org/x/text v0.14.0
 	google.golang.org/grpc v1.62.1
 	gopkg.in/gcfg.v1 v1.2.3
-	k8s.io/api v0.29.3
-	k8s.io/apimachinery v0.29.3
-	k8s.io/client-go v0.29.3
+	k8s.io/api v0.29.6
+	k8s.io/apimachinery v0.29.6
+	k8s.io/client-go v0.29.6
 	k8s.io/mount-utils v0.29.3
 	k8s.io/utils v0.0.0-20240102154912-e7106e64919e
 )
@@ -48,10 +48,10 @@ require (
 	github.com/onsi/gomega v1.30.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
-	golang.org/x/net v0.20.0 // indirect
+	golang.org/x/net v0.23.0 // indirect
 	golang.org/x/oauth2 v0.16.0 // indirect
-	golang.org/x/sys v0.16.0 // indirect
-	golang.org/x/term v0.16.0 // indirect
+	golang.org/x/sys v0.18.0 // indirect
+	golang.org/x/term v0.18.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.16.1 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
