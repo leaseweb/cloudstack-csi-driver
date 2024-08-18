@@ -13,8 +13,8 @@ require (
 	golang.org/x/text v0.16.0
 	google.golang.org/grpc v1.65.0
 	gopkg.in/gcfg.v1 v1.2.3
-	k8s.io/api v0.29.7
-	k8s.io/apimachinery v0.29.7
+	k8s.io/api v0.29.8
+	k8s.io/apimachinery v0.29.8
 	k8s.io/client-go v0.29.7
 	k8s.io/component-base v0.29.7
 	k8s.io/klog/v2 v2.110.1
