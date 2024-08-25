@@ -4,10 +4,10 @@ go 1.21
 
 require (
 	github.com/apache/cloudstack-go/v2 v2.16.1
-	github.com/container-storage-interface/spec v1.9.0
+	github.com/container-storage-interface/spec v1.10.0
 	github.com/hashicorp/go-uuid v1.0.3
 	github.com/kubernetes-csi/csi-lib-utils v0.17.0
-	github.com/kubernetes-csi/csi-test/v5 v5.2.0
+	github.com/kubernetes-csi/csi-test/v5 v5.3.0
 	github.com/spf13/pflag v1.0.5
 	golang.org/x/sys v0.24.0
 	golang.org/x/text v0.17.0
@@ -17,7 +17,7 @@ require (
 	k8s.io/apimachinery v0.29.8
 	k8s.io/client-go v0.29.8
 	k8s.io/component-base v0.29.8
-	k8s.io/klog/v2 v2.110.1
+	k8s.io/klog/v2 v2.130.1
 	k8s.io/mount-utils v0.29.8
 	k8s.io/utils v0.0.0-20240102154912-e7106e64919e
 )
@@ -28,7 +28,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
-	github.com/go-logr/logr v1.3.0 // indirect
+	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/zapr v1.2.3 // indirect
 	github.com/go-openapi/jsonpointer v0.19.6 // indirect
 	github.com/go-openapi/jsonreference v0.20.2 // indirect
