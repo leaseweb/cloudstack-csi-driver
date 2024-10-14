@@ -6,10 +6,10 @@ toolchain go1.22.8
 
 require (
 	github.com/apache/cloudstack-go/v2 v2.16.1
-	github.com/container-storage-interface/spec v1.9.0
+	github.com/container-storage-interface/spec v1.10.0
 	github.com/hashicorp/go-uuid v1.0.3
 	github.com/kubernetes-csi/csi-lib-utils v0.18.1
-	github.com/kubernetes-csi/csi-test/v5 v5.2.0
+	github.com/kubernetes-csi/csi-test/v5 v5.3.1
 	github.com/spf13/pflag v1.0.5
 	golang.org/x/sys v0.26.0
 	golang.org/x/text v0.19.0
@@ -19,7 +19,7 @@ require (
 	k8s.io/apimachinery v0.30.5
 	k8s.io/client-go v0.30.5
 	k8s.io/component-base v0.30.5
-	k8s.io/klog/v2 v2.120.1
+	k8s.io/klog/v2 v2.130.1
 	k8s.io/mount-utils v0.30.5
 	k8s.io/utils v0.0.0-20240102154912-e7106e64919e
 )
