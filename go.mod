@@ -1,8 +1,7 @@
 module github.com/leaseweb/cloudstack-csi-driver
 
 go 1.22.0
-
-toolchain go1.22.8
+toolchain go1.23.7
 
 require (
 	github.com/apache/cloudstack-go/v2 v2.16.1
@@ -14,8 +13,8 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.9.0
 	go.uber.org/mock v0.5.0
-	golang.org/x/sys v0.26.0
-	golang.org/x/text v0.19.0
+	golang.org/x/sys v0.30.0
+	golang.org/x/text v0.22.0
 	google.golang.org/grpc v1.65.0
 	gopkg.in/gcfg.v1 v1.2.3
 	k8s.io/api v0.30.7
@@ -66,9 +65,9 @@ require (
 	github.com/spf13/cobra v1.7.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
-	golang.org/x/net v0.26.0 // indirect
+	golang.org/x/net v0.36.0 // indirect
 	golang.org/x/oauth2 v0.20.0 // indirect
-	golang.org/x/term v0.21.0 // indirect
+	golang.org/x/term v0.29.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.22.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240528184218-531527333157 // indirect
