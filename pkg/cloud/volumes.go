@@ -45,7 +45,7 @@ func (c *client) GetVolumeByID(ctx context.Context, volumeID string) (*Volume, e
 		p.SetProjectid(c.projectID)
 	}
 	logger.V(2).Info("CloudStack API call", "command", "ListVolumes", "params", map[string]string{
-		"id": volumeID,
+		"id": volumeID, "projectid": c.projectID,
 	})
 
 	return c.listVolumes(p)
@@ -132,9 +132,10 @@ func (c *client) DetachVolume(ctx context.Context, volumeID string) error {
 }
 
 // ExpandVolume expands the volume to new size.
-func (c *client) ExpandVolume(ctx context.Context, volumeID string, newSizeInGB int64) error {
+func (c *client) ExpandVolume(ctx context.Context, cs *ControllerService, volumeID string, newSizeInGB int64) error {
 	logger := klog.FromContext(ctx)
-	volume, _, err := c.Volume.GetVolumeByID(volumeID)
+	//volume, _, err := c.Volume.GetVolumeByID(volumeID)
+	volume, _, err := cs.connector.GetVolumeByID(ctx, volumeID)
 	if err != nil {
 		return fmt.Errorf("failed to retrieve volume '%s': %w", volumeID, err)
 	}
@@ -147,9 +148,11 @@ func (c *client) ExpandVolume(ctx context.Context, volumeID string, newSizeInGB 
 	p := c.Volume.NewResizeVolumeParams(volumeID)
 	p.SetId(volumeID)
 	p.SetSize(newSizeInGB)
+	p.SetProjectid(volume.Projectid)
 	logger.V(2).Info("CloudStack API call", "command", "ExpandVolume", "params", map[string]string{
 		"name":           volumeName,
 		"volumeid":       volumeID,
+		"projectid":      volume.Projectid,
 		"current_size":   strconv.FormatInt(currentSizeInGB, 10),
 		"requested_size": strconv.FormatInt(newSizeInGB, 10),
 	})
