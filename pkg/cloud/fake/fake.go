@@ -131,7 +131,7 @@ func (f *fakeConnector) DetachVolume(_ context.Context, volumeID string) error {
 	return cloud.ErrNotFound
 }
 
-func (f *fakeConnector) ExpandVolume(_ context.Context, cs *ControllerService, volumeID string, newSizeInGB int64) error {
+func (f *fakeConnector) ExpandVolume(_ context.Context, volume *Volume, volumeID string, newSizeInGB int64) error {
 	if vol, ok := f.volumesByID[volumeID]; ok {
 		newSizeInBytes := newSizeInGB * 1024 * 1024 * 1024
 		if newSizeInBytes > vol.Size {
