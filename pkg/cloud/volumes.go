@@ -132,32 +132,23 @@ func (c *client) DetachVolume(ctx context.Context, volumeID string) error {
 }
 
 // ExpandVolume expands the volume to new size.
-func (c *client) ExpandVolume(ctx context.Context, cs *ControllerService, volumeID string, newSizeInGB int64) error {
+func (c *client) ExpandVolume(ctx context.Context, volume *Volume, volumeID string, newSizeInGB int64) error {
 	logger := klog.FromContext(ctx)
-	//volume, _, err := c.Volume.GetVolumeByID(volumeID)
-	volume, _, err := cs.connector.GetVolumeByID(ctx, volumeID)
-	if err != nil {
-		return fmt.Errorf("failed to retrieve volume '%s': %w", volumeID, err)
-	}
-	if volume.State != "Allocated" && volume.State != "Ready" {
-		return fmt.Errorf("volume '%s' is not in 'Allocated' or 'Ready' state to get resized", volumeID)
-	}
+
 	currentSize := volume.Size
 	currentSizeInGB := util.RoundUpBytesToGB(currentSize)
 	volumeName := volume.Name
 	p := c.Volume.NewResizeVolumeParams(volumeID)
 	p.SetId(volumeID)
 	p.SetSize(newSizeInGB)
-	p.SetProjectid(volume.Projectid)
 	logger.V(2).Info("CloudStack API call", "command", "ExpandVolume", "params", map[string]string{
 		"name":           volumeName,
 		"volumeid":       volumeID,
-		"projectid":      volume.Projectid,
 		"current_size":   strconv.FormatInt(currentSizeInGB, 10),
 		"requested_size": strconv.FormatInt(newSizeInGB, 10),
 	})
 	// Execute the API call to resize the volume.
-	_, err = c.Volume.ResizeVolume(p)
+	_, err := c.Volume.ResizeVolume(p)
 	if err != nil {
 		// Handle the error accordingly
 		return fmt.Errorf("failed to expand volume '%s': %w", volumeID, err)

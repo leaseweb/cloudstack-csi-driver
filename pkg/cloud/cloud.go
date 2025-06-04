@@ -24,7 +24,7 @@ type Cloud interface {
 	DeleteVolume(ctx context.Context, id string) error
 	AttachVolume(ctx context.Context, volumeID, vmID string) (string, error)
 	DetachVolume(ctx context.Context, volumeID string) error
-	ExpandVolume(ctx context.Context, cs *ControllerService, volumeID string, newSizeInGB int64) error
+	ExpandVolume(ctx context.Context, volume *Volume, volumeID string, newSizeInGB int64) error
 }
 
 // Volume represents a CloudStack volume.

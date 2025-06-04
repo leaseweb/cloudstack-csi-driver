@@ -522,7 +522,7 @@ func (cs *ControllerService) ControllerExpandVolume(ctx context.Context, req *cs
 	}
 	defer cs.operationLocks.ReleaseExpandLock(volumeID)
 
-	err = cs.connector.ExpandVolume(ctx, cs, volumeID, volSizeGB)
+	err = cs.connector.ExpandVolume(ctx, volume, volumeID, volSizeGB)
 	
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not resize volume %q to size %v: %v", volumeID, volSizeGB, err)
