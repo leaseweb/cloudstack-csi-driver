@@ -8,8 +8,6 @@ import (
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
 	"k8s.io/klog/v2"
-
-	"github.com/leaseweb/cloudstack-csi-driver/pkg/util"
 )
 
 func (c *client) listVolumes(p *cloudstack.ListVolumesParams) (*Volume, error) {
@@ -45,7 +43,8 @@ func (c *client) GetVolumeByID(ctx context.Context, volumeID string) (*Volume, e
 		p.SetProjectid(c.projectID)
 	}
 	logger.V(2).Info("CloudStack API call", "command", "ListVolumes", "params", map[string]string{
-		"id": volumeID,
+		"id":        volumeID,
+		"projectid": c.projectID,
 	})
 
 	return c.listVolumes(p)
@@ -134,27 +133,16 @@ func (c *client) DetachVolume(ctx context.Context, volumeID string) error {
 // ExpandVolume expands the volume to new size.
 func (c *client) ExpandVolume(ctx context.Context, volumeID string, newSizeInGB int64) error {
 	logger := klog.FromContext(ctx)
-	volume, _, err := c.Volume.GetVolumeByID(volumeID)
-	if err != nil {
-		return fmt.Errorf("failed to retrieve volume '%s': %w", volumeID, err)
-	}
-	if volume.State != "Allocated" && volume.State != "Ready" {
-		return fmt.Errorf("volume '%s' is not in 'Allocated' or 'Ready' state to get resized", volumeID)
-	}
-	currentSize := volume.Size
-	currentSizeInGB := util.RoundUpBytesToGB(currentSize)
-	volumeName := volume.Name
+
 	p := c.Volume.NewResizeVolumeParams(volumeID)
 	p.SetId(volumeID)
 	p.SetSize(newSizeInGB)
 	logger.V(2).Info("CloudStack API call", "command", "ExpandVolume", "params", map[string]string{
-		"name":           volumeName,
-		"volumeid":       volumeID,
-		"current_size":   strconv.FormatInt(currentSizeInGB, 10),
-		"requested_size": strconv.FormatInt(newSizeInGB, 10),
+		"id":   volumeID,
+		"size": strconv.FormatInt(newSizeInGB, 10),
 	})
 	// Execute the API call to resize the volume.
-	_, err = c.Volume.ResizeVolume(p)
+	_, err := c.Volume.ResizeVolume(p)
 	if err != nil {
 		// Handle the error accordingly
 		return fmt.Errorf("failed to expand volume '%s': %w", volumeID, err)

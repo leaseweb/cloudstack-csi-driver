@@ -505,7 +505,7 @@ func (cs *ControllerService) ControllerExpandVolume(ctx context.Context, req *cs
 		return nil, status.Error(codes.OutOfRange, "Volume size exceeds the limit specified")
 	}
 
-	_, err := cs.connector.GetVolumeByID(ctx, volumeID)
+	volume, err := cs.connector.GetVolumeByID(ctx, volumeID)
 	if err != nil {
 		if errors.Is(err, cloud.ErrNotFound) {
 			return nil, status.Errorf(codes.NotFound, "Volume %v not found", volumeID)
@@ -523,13 +523,16 @@ func (cs *ControllerService) ControllerExpandVolume(ctx context.Context, req *cs
 	defer cs.operationLocks.ReleaseExpandLock(volumeID)
 
 	err = cs.connector.ExpandVolume(ctx, volumeID, volSizeGB)
+
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not resize volume %q to size %v: %v", volumeID, volSizeGB, err)
 	}
 
 	logger.Info("Volume successfully expanded",
 		"volumeID", volumeID,
-		"volumeSize", volSizeGB,
+		"volumeName", volume.Name,
+		"volumeSizeNew", volSizeGB,
+		"volumeSizeOld", util.RoundUpBytesToGB(volume.Size),
 	)
 
 	nodeExpansionRequired := true
