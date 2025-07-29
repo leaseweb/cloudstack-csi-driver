@@ -37,8 +37,10 @@ const (
 
 // Topology keys.
 const (
-	ZoneKey = "topology." + DriverName + "/zone"
-	HostKey = "topology." + DriverName + "/host"
+	WellKnownZoneTopologyKey = "topology.kubernetes.io/zone"
+	// ZoneTopologyKey is deprecated in favor of WellKnownZoneTopologyKey, only here for backwards compatibility.
+	ZoneTopologyKey = "topology." + DriverName + "/zone"
+	OSTopologyKey   = "kubernetes.io/os"
 )
 
 // Volume parameters keys.

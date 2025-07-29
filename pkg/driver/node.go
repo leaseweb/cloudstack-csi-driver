@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
@@ -348,15 +349,21 @@ func (ns *NodeService) NodeGetInfo(ctx context.Context, req *csi.NodeGetInfoRequ
 	if vm.ID == "" {
 		return nil, status.Error(codes.Internal, "Node with no ID")
 	}
-	if vm.ZoneID == "" {
-		return nil, status.Error(codes.Internal, "Node zone ID not found")
+	if vm.ZoneID == "" || vm.ZoneName == "" {
+		return nil, status.Error(codes.Internal, "Node zone ID or name not found")
 	}
 
-	topology := Topology{ZoneID: vm.ZoneID}
+	osType := runtime.GOOS
+	segments := map[string]string{
+		ZoneTopologyKey:          vm.ZoneID,
+		WellKnownZoneTopologyKey: vm.ZoneName,
+		OSTopologyKey:            osType,
+	}
+	topology := &csi.Topology{Segments: segments}
 
 	return &csi.NodeGetInfoResponse{
 		NodeId:             vm.ID,
-		AccessibleTopology: topology.ToCSI(),
+		AccessibleTopology: topology,
 		MaxVolumesPerNode:  ns.maxVolumesPerNode,
 	}, nil
 }

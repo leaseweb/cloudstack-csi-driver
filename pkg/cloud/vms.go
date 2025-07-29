@@ -30,8 +30,9 @@ func (c *client) GetVMByID(ctx context.Context, vmID string) (*VM, error) {
 	vm := l.VirtualMachines[0]
 
 	return &VM{
-		ID:     vm.Id,
-		ZoneID: vm.Zoneid,
+		ID:       vm.Id,
+		ZoneID:   vm.Zoneid,
+		ZoneName: vm.Zonename,
 	}, nil
 }
 
@@ -59,7 +60,8 @@ func (c *client) getVMByName(ctx context.Context, name string) (*VM, error) {
 	vm := l.VirtualMachines[0]
 
 	return &VM{
-		ID:     vm.Id,
-		ZoneID: vm.Zoneid,
+		ID:       vm.Id,
+		ZoneID:   vm.Zoneid,
+		ZoneName: vm.Zonename,
 	}, nil
 }

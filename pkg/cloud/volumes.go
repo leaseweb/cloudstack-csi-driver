@@ -2,7 +2,9 @@ package cloud
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"math/rand"
 	"strconv"
 	"strings"
 
@@ -28,6 +30,7 @@ func (c *client) listVolumes(p *cloudstack.ListVolumesParams) (*Volume, error) {
 		Size:             vol.Size,
 		DiskOfferingID:   vol.Diskofferingid,
 		ZoneID:           vol.Zoneid,
+		ZoneName:         vol.Zonename,
 		VirtualMachineID: vol.Virtualmachineid,
 		DeviceID:         strconv.FormatInt(vol.Deviceid, 10),
 	}
@@ -64,8 +67,22 @@ func (c *client) GetVolumeByName(ctx context.Context, name string) (*Volume, err
 	return c.listVolumes(p)
 }
 
-func (c *client) CreateVolume(ctx context.Context, diskOfferingID, zoneID, name string, sizeInGB int64) (string, error) {
+func (c *client) CreateVolume(ctx context.Context, diskOfferingID, zoneID, name string, sizeInGB int64) (*Volume, error) {
 	logger := klog.FromContext(ctx)
+
+	if zoneID == "" {
+		// No topology requirement. Use random zone.
+		zones, err := c.ListZonesID(ctx)
+		if err != nil {
+			return nil, err
+		}
+		n := len(zones)
+		if n == 0 {
+			return nil, errors.New("no zone available")
+		}
+		zoneID = zones[rand.Intn(n)] //nolint:gosec
+	}
+
 	p := c.Volume.NewCreateVolumeParams()
 	p.SetDiskofferingid(diskOfferingID)
 	p.SetZoneid(zoneID)
@@ -82,10 +99,17 @@ func (c *client) CreateVolume(ctx context.Context, diskOfferingID, zoneID, name 
 	})
 	vol, err := c.Volume.CreateVolume(p)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return vol.Id, nil
+	return &Volume{
+		ID:             vol.Id,
+		Name:           vol.Name,
+		Size:           vol.Size,
+		DiskOfferingID: vol.Diskofferingid,
+		ZoneID:         vol.Zoneid,
+		ZoneName:       vol.Zonename,
+	}, nil
 }
 
 func (c *client) DeleteVolume(ctx context.Context, id string) error {

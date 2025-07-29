@@ -56,10 +56,10 @@ func (mr *MockCloudMockRecorder) AttachVolume(ctx, volumeID, vmID any) *gomock.C
 }
 
 // CreateVolume mocks base method.
-func (m *MockCloud) CreateVolume(ctx context.Context, diskOfferingID, zoneID, name string, sizeInGB int64) (string, error) {
+func (m *MockCloud) CreateVolume(ctx context.Context, diskOfferingID, zoneID, name string, sizeInGB int64) (*Volume, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateVolume", ctx, diskOfferingID, zoneID, name, sizeInGB)
-	ret0, _ := ret[0].(string)
+	ret0, _ := ret[0].(*Volume)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -170,6 +170,21 @@ func (m *MockCloud) GetVolumeByName(ctx context.Context, name string) (*Volume, 
 func (mr *MockCloudMockRecorder) GetVolumeByName(ctx, name any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVolumeByName", reflect.TypeOf((*MockCloud)(nil).GetVolumeByName), ctx, name)
+}
+
+// GetZoneIDByName mocks base method.
+func (m *MockCloud) GetZoneIDByName(ctx context.Context, name string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetZoneIDByName", ctx, name)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetZoneIDByName indicates an expected call of GetZoneIDByName.
+func (mr *MockCloudMockRecorder) GetZoneIDByName(ctx, name any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetZoneIDByName", reflect.TypeOf((*MockCloud)(nil).GetZoneIDByName), ctx, name)
 }
 
 // ListZonesID mocks base method.
