@@ -89,14 +89,26 @@ spec:
           args:
             - "-cloudstackconfig=/etc/cloudstack-csi-driver/cloud-config"
             - "-kubeconfig=-"
+             - "-nodeName=$(NODE_NAME)"
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
           volumeMounts:
             - name: cloudstack-conf
               mountPath: /etc/cloudstack-csi-driver
+            - name: cloud-init-dir
+              mountPath: /run/cloud-init/
       restartPolicy: Never
       volumes:
         - name: cloudstack-conf
           secret:
             secretName: cloudstack-secret
+        - name: cloud-init-dir
+          hostPath:
+            path: /run/cloud-init/
+            type: Directory
 E0F
 ```
 
