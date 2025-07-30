@@ -12,7 +12,10 @@ import (
 	"github.com/leaseweb/cloudstack-csi-driver/pkg/util"
 )
 
-const zoneID = "a1887604-237c-4212-a9cd-94620b7880fa"
+const (
+	zoneID   = "a1887604-237c-4212-a9cd-94620b7880fa"
+	zoneName = "zone-1"
+)
 
 type fakeConnector struct {
 	node          *cloud.VM
@@ -29,12 +32,14 @@ func New() cloud.Cloud {
 		Size:             10,
 		DiskOfferingID:   "9743fd77-0f5d-4ef9-b2f8-f194235c769c",
 		ZoneID:           zoneID,
+		ZoneName:         zoneName,
 		VirtualMachineID: "",
 		DeviceID:         "",
 	}
 	node := &cloud.VM{
-		ID:     "0d7107a3-94d2-44e7-89b8-8930881309a5",
-		ZoneID: zoneID,
+		ID:       "0d7107a3-94d2-44e7-89b8-8930881309a5",
+		ZoneID:   zoneID,
+		ZoneName: zoneName,
 	}
 
 	return &fakeConnector{
@@ -54,6 +59,10 @@ func (f *fakeConnector) GetVMByID(_ context.Context, vmID string) (*cloud.VM, er
 
 func (f *fakeConnector) GetNodeInfo(_ context.Context, _ string) (*cloud.VM, error) {
 	return f.node, nil
+}
+
+func (f *fakeConnector) GetZoneIDByName(_ context.Context, _ string) (string, error) {
+	return zoneID, nil
 }
 
 func (f *fakeConnector) ListZonesID(_ context.Context) ([]string, error) {
@@ -78,7 +87,7 @@ func (f *fakeConnector) GetVolumeByName(_ context.Context, name string) (*cloud.
 	return nil, cloud.ErrNotFound
 }
 
-func (f *fakeConnector) CreateVolume(_ context.Context, diskOfferingID, zoneID, name string, sizeInGB int64) (string, error) {
+func (f *fakeConnector) CreateVolume(_ context.Context, diskOfferingID, zoneID, name string, sizeInGB int64) (*cloud.Volume, error) {
 	id, _ := uuid.GenerateUUID()
 	vol := cloud.Volume{
 		ID:             id,
@@ -86,11 +95,12 @@ func (f *fakeConnector) CreateVolume(_ context.Context, diskOfferingID, zoneID, 
 		Size:           util.GigaBytesToBytes(sizeInGB),
 		DiskOfferingID: diskOfferingID,
 		ZoneID:         zoneID,
+		ZoneName:       zoneName,
 	}
 	f.volumesByID[vol.ID] = vol
 	f.volumesByName[vol.Name] = vol
 
-	return vol.ID, nil
+	return &vol, nil
 }
 
 func (f *fakeConnector) DeleteVolume(_ context.Context, id string) error {

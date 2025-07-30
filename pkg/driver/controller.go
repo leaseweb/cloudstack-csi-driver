@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math/rand"
 	"regexp"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/klog/v2"
 
 	"github.com/leaseweb/cloudstack-csi-driver/pkg/cloud"
@@ -98,6 +98,7 @@ func (cs *ControllerService) CreateVolume(ctx context.Context, req *csi.CreateVo
 			return nil, status.Errorf(codes.AlreadyExists, "Volume %v already exists but does not satisfy request: %s", name, message)
 		}
 		// Existing volume is ok.
+		segments := map[string]string{ZoneTopologyKey: vol.ZoneID}
 		resp := &csi.CreateVolumeResponse{
 			Volume: &csi.Volume{
 				VolumeId:      vol.ID,
@@ -105,7 +106,9 @@ func (cs *ControllerService) CreateVolume(ctx context.Context, req *csi.CreateVo
 				VolumeContext: req.GetParameters(),
 				// ContentSource: req.GetVolumeContentSource(), TODO: snapshot support.
 				AccessibleTopology: []*csi.Topology{
-					Topology{ZoneID: vol.ZoneID}.ToCSI(),
+					{
+						Segments: segments,
+					},
 				},
 			},
 		}
@@ -116,35 +119,15 @@ func (cs *ControllerService) CreateVolume(ctx context.Context, req *csi.CreateVo
 	// We have to create the volume.
 
 	// Determine volume size using requested capacity range.
-	sizeInGB, err := determineSize(req)
+	sizeInGB, err := determineVolumeSizeInGB(req)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	// Determine zone using topology constraints.
-	var zoneID string
-	topologyRequirement := req.GetAccessibilityRequirements()
-	if topologyRequirement == nil || topologyRequirement.GetRequisite() == nil { //nolint:nestif
-		// No topology requirement. Use random zone.
-		zones, err := cs.connector.ListZonesID(ctx)
-		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-		n := len(zones)
-		if n == 0 {
-			return nil, status.Error(codes.Internal, "No zone available")
-		}
-		zoneID = zones[rand.Intn(n)] //nolint:gosec
-	} else {
-		reqTopology := topologyRequirement.GetRequisite()
-		if len(reqTopology) > 1 {
-			return nil, status.Error(codes.InvalidArgument, "Too many topology requirements")
-		}
-		t, err := NewTopology(reqTopology[0])
-		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, "Cannot parse topology requirements")
-		}
-		zoneID = t.ZoneID
+	zoneID, err := pickAvailabilityZone(ctx, cs.connector, req.GetAccessibilityRequirements())
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to pick zone from accessibility requirements: %v", err.Error())
 	}
 
 	logger.Info("Creating new volume",
@@ -154,19 +137,22 @@ func (cs *ControllerService) CreateVolume(ctx context.Context, req *csi.CreateVo
 		"zone", zoneID,
 	)
 
-	volID, err := cs.connector.CreateVolume(ctx, diskOfferingID, zoneID, name, sizeInGB)
+	vol, err = cs.connector.CreateVolume(ctx, diskOfferingID, zoneID, name, sizeInGB)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Cannot create volume %s: %v", name, err.Error())
 	}
 
+	segments := map[string]string{ZoneTopologyKey: vol.ZoneID}
 	resp := &csi.CreateVolumeResponse{
 		Volume: &csi.Volume{
-			VolumeId:      volID,
+			VolumeId:      vol.ID,
 			CapacityBytes: util.GigaBytesToBytes(sizeInGB),
 			VolumeContext: req.GetParameters(),
 			// ContentSource: req.GetVolumeContentSource(), TODO: snapshot support.
 			AccessibleTopology: []*csi.Topology{
-				Topology{ZoneID: zoneID}.ToCSI(),
+				{
+					Segments: segments,
+				},
 			},
 		},
 	}
@@ -174,6 +160,8 @@ func (cs *ControllerService) CreateVolume(ctx context.Context, req *csi.CreateVo
 	return resp, nil
 }
 
+// checkVolumeSuitable checks if the volume is suitable for the request by comparing the existing
+// volume's disk offering, size, and zone with the request's disk offering, size, and zone.
 func checkVolumeSuitable(vol *cloud.Volume,
 	diskOfferingID string, capRange *csi.CapacityRange, topologyRequirement *csi.TopologyRequirement,
 ) (bool, string) {
@@ -190,24 +178,43 @@ func checkVolumeSuitable(vol *cloud.Volume,
 		}
 	}
 
-	if topologyRequirement != nil && topologyRequirement.GetRequisite() != nil {
-		reqTopology := topologyRequirement.GetRequisite()
-		if len(reqTopology) > 1 {
-			return false, "Too many topology requirements"
+	if topologyRequirement != nil {
+		// Early return if no topology constraints are specified
+		if len(topologyRequirement.GetPreferred()) == 0 && len(topologyRequirement.GetRequisite()) == 0 {
+			return true, ""
 		}
-		t, err := NewTopology(reqTopology[0])
+
+		// Extract zone information from topology requirements
+		preferredZoneIDs, preferredZoneNames, err := getZonesFromTopology(topologyRequirement.GetPreferred())
 		if err != nil {
-			return false, "Cannot parse topology requirements"
+			return false, fmt.Sprintf("Cannot parse preferred topology requirements: %v", err)
 		}
-		if t.ZoneID != vol.ZoneID {
-			return false, fmt.Sprintf("Volume in zone %s, requested zone is %s", vol.ZoneID, t.ZoneID)
+
+		requisiteZoneIDs, requisiteZoneNames, err := getZonesFromTopology(topologyRequirement.GetRequisite())
+		if err != nil {
+			return false, fmt.Sprintf("Cannot parse requisite topology requirements: %v", err)
 		}
+
+		// Create sets for efficient lookup
+		allowedZoneIDs := sets.NewString(preferredZoneIDs...).Union(sets.NewString(requisiteZoneIDs...))
+		allowedZoneNames := sets.NewString(preferredZoneNames...).Union(sets.NewString(requisiteZoneNames...))
+
+		// Check if volume's zone matches any of the allowed zones
+		if allowedZoneIDs.Has(vol.ZoneID) || allowedZoneNames.Has(vol.ZoneName) {
+			return true, ""
+		}
+
+		// Volume doesn't match any allowed zones
+		allowedZones := allowedZoneIDs.Union(allowedZoneNames)
+
+		return false, fmt.Sprintf("Volume in zone %s, requested zones from topology requirements are %s", vol.ZoneID, allowedZones.List())
 	}
 
 	return true, ""
 }
 
-func determineSize(req *csi.CreateVolumeRequest) (int64, error) {
+// determineVolumeSizeInGB determines the volume size in GB based on the capacity range.
+func determineVolumeSizeInGB(req *csi.CreateVolumeRequest) (int64, error) {
 	var sizeInGB int64
 
 	if req.GetCapacityRange() != nil {

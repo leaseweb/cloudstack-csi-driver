@@ -4,25 +4,24 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 	"k8s.io/klog/v2"
 	"k8s.io/klog/v2/ktesting"
 
-	cloud "github.com/leaseweb/cloudstack-csi-driver/pkg/cloud/fake"
+	"github.com/leaseweb/cloudstack-csi-driver/pkg/cloud"
 	"github.com/leaseweb/cloudstack-csi-driver/pkg/mount"
 	"github.com/leaseweb/cloudstack-csi-driver/pkg/util"
 )
 
 const (
-	//nolint:godox
-	// TODO: Adjusted this to paths in /tmp until https://github.com/kubernetes/kubernetes/pull/128286
-	//       is solved.
-	sourceTest = "/tmp/source_test"
-	targetTest = "/tmp/target_test"
+	sourceTest = "./source_test"
+	targetTest = "./target_test"
 )
 
 func TestNodePublishVolumeIdempotentMount(t *testing.T) {
@@ -32,8 +31,11 @@ func TestNodePublishVolumeIdempotentMount(t *testing.T) {
 	logger := ktesting.NewLogger(t, ktesting.NewConfig(ktesting.Verbosity(10), ktesting.BufferLogs(true)))
 	ctx := klog.NewContext(context.Background(), logger)
 
+	mockCtl := gomock.NewController(t)
+	defer mockCtl.Finish()
+
 	driver := &NodeService{
-		connector:   cloud.New(),
+		connector:   cloud.NewMockCloud(mockCtl),
 		mounter:     mount.New(),
 		volumeLocks: util.NewVolumeLocks(),
 	}
@@ -86,4 +88,66 @@ func TestNodePublishVolumeIdempotentMount(t *testing.T) {
 	require.NoError(t, err)
 	err = os.RemoveAll(targetTest)
 	require.NoError(t, err)
+}
+
+func TestNodeGetInfo(t *testing.T) {
+	logger := ktesting.NewLogger(t, ktesting.NewConfig(ktesting.Verbosity(10), ktesting.BufferLogs(true)))
+	ctx := klog.NewContext(context.Background(), logger)
+
+	testCases := []struct {
+		name        string
+		cloudMock   func(ctrl *gomock.Controller) *cloud.MockCloud
+		vmName      string
+		vmZoneID    string
+		vmZoneName  string
+		expectedRes *csi.NodeGetInfoResponse
+	}{
+		{
+			name: "test-1",
+			cloudMock: func(ctrl *gomock.Controller) *cloud.MockCloud {
+				mockCloud := cloud.NewMockCloud(ctrl)
+				mockCloud.EXPECT().GetNodeInfo(ctx, "test-vm").Return(&cloud.VM{
+					ID:       "test-vm",
+					ZoneID:   "test-zone-id",
+					ZoneName: "test-zone-name",
+				}, nil)
+
+				return mockCloud
+			},
+			vmName:     "test-vm",
+			vmZoneID:   "test-zone-id",
+			vmZoneName: "test-zone-name",
+			expectedRes: &csi.NodeGetInfoResponse{
+				NodeId: "test-vm",
+				AccessibleTopology: &csi.Topology{
+					Segments: map[string]string{
+						ZoneTopologyKey:          "test-zone-id",
+						WellKnownZoneTopologyKey: "test-zone-name",
+						OSTopologyKey:            runtime.GOOS,
+					},
+				},
+				MaxVolumesPerNode: DefaultMaxVolAttachLimit,
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			mockCtl := gomock.NewController(t)
+			defer mockCtl.Finish()
+
+			mockCloud := tc.cloudMock(mockCtl)
+			driver := &NodeService{
+				connector:         mockCloud,
+				mounter:           mount.New(),
+				nodeName:          tc.vmName,
+				maxVolumesPerNode: DefaultMaxVolAttachLimit,
+				volumeLocks:       util.NewVolumeLocks(),
+			}
+
+			res, err := driver.NodeGetInfo(ctx, &csi.NodeGetInfoRequest{})
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectedRes, res)
+		})
+	}
 }

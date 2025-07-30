@@ -3,6 +3,7 @@ package cloud
 import (
 	"context"
 
+	"github.com/apache/cloudstack-go/v2/cloudstack"
 	"k8s.io/klog/v2"
 )
 
@@ -17,22 +18,8 @@ func (c *client) GetVMByID(ctx context.Context, vmID string) (*VM, error) {
 	logger.V(2).Info("CloudStack API call", "command", "ListVirtualMachines", "params", map[string]string{
 		"id": vmID,
 	})
-	l, err := c.VirtualMachine.ListVirtualMachines(p)
-	if err != nil {
-		return nil, err
-	}
-	if l.Count == 0 {
-		return nil, ErrNotFound
-	}
-	if l.Count > 1 {
-		return nil, ErrTooManyResults
-	}
-	vm := l.VirtualMachines[0]
 
-	return &VM{
-		ID:     vm.Id,
-		ZoneID: vm.Zoneid,
-	}, nil
+	return c.listVM(p)
 }
 
 func (c *client) getVMByName(ctx context.Context, name string) (*VM, error) {
@@ -46,6 +33,11 @@ func (c *client) getVMByName(ctx context.Context, name string) (*VM, error) {
 	logger.V(2).Info("CloudStack API call", "command", "ListVirtualMachines", "params", map[string]string{
 		"name": name,
 	})
+
+	return c.listVM(p)
+}
+
+func (c *client) listVM(p *cloudstack.ListVirtualMachinesParams) (*VM, error) {
 	l, err := c.VirtualMachine.ListVirtualMachines(p)
 	if err != nil {
 		return nil, err
@@ -59,7 +51,8 @@ func (c *client) getVMByName(ctx context.Context, name string) (*VM, error) {
 	vm := l.VirtualMachines[0]
 
 	return &VM{
-		ID:     vm.Id,
-		ZoneID: vm.Zoneid,
+		ID:       vm.Id,
+		ZoneID:   vm.Zoneid,
+		ZoneName: vm.Zonename,
 	}, nil
 }
