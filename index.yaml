@@ -2,6 +2,25 @@ apiVersion: v1
 entries:
   cloudstack-csi:
   - apiVersion: v2
+    appVersion: 0.10.0
+    created: "2025-07-30T12:52:02.316463762Z"
+    description: A Helm chart for CloudStack CSI driver
+    digest: c8c3ee2d5ebee57702651b94b1915785fafbd6dff448bf92edab450fad3060b7
+    keywords:
+    - csi
+    - cloudStack
+    maintainers:
+    - name: hrak
+    - name: FarnazBGH
+    - name: lanord
+    name: cloudstack-csi
+    sources:
+    - https://github.com/Leaseweb/cloudstack-csi-driver
+    type: application
+    urls:
+    - https://github.com/leaseweb/cloudstack-csi-driver/releases/download/cloudstack-csi-2.4.0/cloudstack-csi-2.4.0.tgz
+    version: 2.4.0
+  - apiVersion: v2
     appVersion: 0.9.1
     created: "2025-07-22T13:54:41.156663165Z"
     description: A Helm chart for CloudStack CSI driver
@@ -250,4 +269,4 @@ entries:
     urls:
     - https://github.com/Leaseweb/cloudstack-csi-driver/releases/download/cloudstack-csi-1.0.0/cloudstack-csi-1.0.0.tgz
     version: 1.0.0
-generated: "2025-07-22T13:54:41.156790896Z"
+generated: "2025-07-30T12:52:02.316594104Z"
