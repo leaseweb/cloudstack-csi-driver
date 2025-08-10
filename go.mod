@@ -5,7 +5,7 @@ go 1.23.0
 toolchain go1.23.5
 
 require (
-	github.com/apache/cloudstack-go/v2 v2.17.0
+	github.com/apache/cloudstack-go/v2 v2.17.1
 	github.com/container-storage-interface/spec v1.10.0
 	github.com/golang/mock v1.6.0
 	github.com/hashicorp/go-uuid v1.0.3
