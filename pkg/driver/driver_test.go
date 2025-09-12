@@ -1,7 +1,6 @@
 package driver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -14,7 +13,7 @@ import (
 func TestNewDriver(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	ctx := context.Background()
+	ctx := t.Context()
 	fakeCloud := fake.New()
 	fakeMounter := mount.NewFake()
 	testCases := []struct {
