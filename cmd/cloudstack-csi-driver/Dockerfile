@@ -1,4 +1,4 @@
-FROM alpine:3.20
+FROM alpine:3.22
 
 LABEL \
     org.opencontainers.image.description="CloudStack CSI driver" \

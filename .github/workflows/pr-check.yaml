@@ -8,29 +8,29 @@ jobs:
     name: Lint
     runs-on: ubuntu-24.04
     steps:
-      - name: Setup up Go 1.23
-        uses: actions/setup-go@v5
+      - name: Setup up Go 1.24
+        uses: actions/setup-go@v6
         with:
-          go-version: "1.23"
+          go-version: "1.24"
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.63.4
+          version: v1.64.2
           args: --timeout=5m
 
   build:
     name: Test & Build
     runs-on: ubuntu-24.04
     steps:
-      - name: Setup up Go 1.23
-        uses: actions/setup-go@v5
+      - name: Setup up Go 1.24
+        uses: actions/setup-go@v6
         with:
-          go-version: "1.23"
+          go-version: "1.24"
 
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Cache
         uses: actions/cache@v4
