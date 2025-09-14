@@ -1,8 +1,6 @@
 module github.com/leaseweb/cloudstack-csi-driver
 
-go 1.23.0
-
-toolchain go1.23.5
+go 1.24.0
 
 require (
 	github.com/apache/cloudstack-go/v2 v2.17.0
@@ -13,7 +11,7 @@ require (
 	github.com/spf13/pflag v1.0.7
 	github.com/stretchr/testify v1.10.0
 	go.uber.org/mock v0.5.2
-	golang.org/x/sys v0.34.0
+	golang.org/x/sys v0.36.0
 	golang.org/x/text v0.27.0
 	google.golang.org/grpc v1.65.0
 	gopkg.in/gcfg.v1 v1.2.3
