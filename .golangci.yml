@@ -30,7 +30,6 @@ linters:
     - depguard
     - err113
     - exhaustruct
-    - exportloopref
     - funlen
     - gochecknoglobals
     - inamedparam

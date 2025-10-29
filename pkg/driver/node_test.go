@@ -1,7 +1,6 @@
 package driver
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -29,7 +28,7 @@ func TestNodePublishVolumeIdempotentMount(t *testing.T) {
 		t.Skip("Test requires root")
 	}
 	logger := ktesting.NewLogger(t, ktesting.NewConfig(ktesting.Verbosity(10), ktesting.BufferLogs(true)))
-	ctx := klog.NewContext(context.Background(), logger)
+	ctx := klog.NewContext(t.Context(), logger)
 
 	mockCtl := gomock.NewController(t)
 	defer mockCtl.Finish()
@@ -92,7 +91,7 @@ func TestNodePublishVolumeIdempotentMount(t *testing.T) {
 
 func TestNodeGetInfo(t *testing.T) {
 	logger := ktesting.NewLogger(t, ktesting.NewConfig(ktesting.Verbosity(10), ktesting.BufferLogs(true)))
-	ctx := klog.NewContext(context.Background(), logger)
+	ctx := klog.NewContext(t.Context(), logger)
 
 	testCases := []struct {
 		name        string

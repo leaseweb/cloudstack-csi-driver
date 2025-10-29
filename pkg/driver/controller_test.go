@@ -1,7 +1,6 @@
 package driver
 
 import (
-	"context"
 	"reflect"
 	"testing"
 
@@ -102,7 +101,7 @@ func TestCreateVolume(t *testing.T) {
 					Parameters:         stdParams,
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockVol := cloud.Volume{
 					ID:             FakeVolID,
@@ -140,7 +139,7 @@ func TestCreateVolume(t *testing.T) {
 					Parameters:         stdParams,
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockCtl := gomock.NewController(t)
 				defer mockCtl.Finish()
@@ -172,7 +171,7 @@ func TestCreateVolume(t *testing.T) {
 					Parameters:         stdParams,
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockCtl := gomock.NewController(t)
 				defer mockCtl.Finish()
@@ -205,7 +204,7 @@ func TestCreateVolume(t *testing.T) {
 					Parameters:         map[string]string{},
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockCtl := gomock.NewController(t)
 				defer mockCtl.Finish()
@@ -237,7 +236,7 @@ func TestCreateVolume(t *testing.T) {
 					Parameters:         stdParams,
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockCtl := gomock.NewController(t)
 				defer mockCtl.Finish()
@@ -291,7 +290,7 @@ func TestCreateVolume(t *testing.T) {
 					},
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockVol := cloud.Volume{
 					ID:             FakeVolID,
@@ -363,7 +362,7 @@ func TestCreateVolume(t *testing.T) {
 					Parameters:         stdParams,
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockVol := cloud.Volume{
 					ID:             FakeVolID,
@@ -425,7 +424,7 @@ func TestCreateVolume(t *testing.T) {
 					VolumeContext: stdParams,
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockVol := cloud.Volume{
 					ID:             FakeVolID,
@@ -480,7 +479,7 @@ func TestCreateVolume(t *testing.T) {
 					VolumeContext: stdParams,
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockVol := cloud.Volume{
 					ID:             FakeVolID,
@@ -557,7 +556,7 @@ func TestCreateVolume(t *testing.T) {
 					},
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockVol := cloud.Volume{
 					ID:             FakeVolID,
@@ -625,7 +624,7 @@ func TestCreateVolume(t *testing.T) {
 					Parameters:         stdParams,
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockCtl := gomock.NewController(t)
 				defer mockCtl.Finish()

@@ -1,7 +1,6 @@
 package driver
 
 import (
-	"context"
 	"errors"
 	"reflect"
 	"testing"
@@ -18,7 +17,7 @@ const (
 )
 
 func TestPickAvailabilityZone(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	mockCtl := gomock.NewController(t)
 	defer mockCtl.Finish()
 	mockCloud := cloud.NewMockCloud(mockCtl)
