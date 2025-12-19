@@ -244,9 +244,9 @@ func (m *NodeMounter) GetStatistics(volumePath string) (VolumeStatistics, error)
 	}
 
 	volStats := VolumeStatistics{
-		AvailableBytes: int64(statfs.Bavail) * int64(statfs.Bsize),                         //nolint:gosec,unconvert
-		TotalBytes:     int64(statfs.Blocks) * int64(statfs.Bsize),                         //nolint:gosec,unconvert
-		UsedBytes:      (int64(statfs.Blocks) - int64(statfs.Bfree)) * int64(statfs.Bsize), //nolint:gosec,unconvert
+		AvailableBytes: int64(statfs.Bavail) * int64(statfs.Bsize),                         //nolint:gosec
+		TotalBytes:     int64(statfs.Blocks) * int64(statfs.Bsize),                         //nolint:gosec
+		UsedBytes:      (int64(statfs.Blocks) - int64(statfs.Bfree)) * int64(statfs.Bsize), //nolint:gosec
 
 		AvailableInodes: int64(statfs.Ffree),                       //nolint:gosec
 		TotalInodes:     int64(statfs.Files),                       //nolint:gosec
