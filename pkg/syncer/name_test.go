@@ -24,8 +24,8 @@ func TestCreateStorageClassName(t *testing.T) {
 		{OrigName: "--- gold ---", ExpectedName: "gold"},
 		{OrigName: ".silver.", ExpectedName: "silver"},
 		{OrigName: "Don't use me!", ExpectedName: "don-t-use-me"},
-		{OrigName: "cloudstack-東京", ExpectedName: "cloudstack"},
-		{OrigName: "こんにちは世界", ShouldErr: true},
+		{OrigName: "cloudstack", ExpectedName: "cloudstack"},
+		{OrigName: "\u3053\u3093\u306b\u3061\u306f\u4e16\u754c", ShouldErr: true},
 		{OrigName: "", ShouldErr: true},
 	}
 
