@@ -1,5 +1,3 @@
-// Package cloud contains CloudStack related
-// functions.
 package cloud
 
 import (
@@ -60,6 +58,7 @@ var (
 // client is the implementation of Cloud.
 type client struct {
 	*cloudstack.CloudStackClient
+
 	projectID string
 }
 

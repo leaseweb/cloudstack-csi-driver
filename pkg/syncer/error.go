@@ -1,14 +1,18 @@
 package syncer
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type combinedErrors []error
 
 func (errs combinedErrors) Error() string {
-	err := "Collected errors:\n"
+	var b strings.Builder
+	b.WriteString("Collected errors:\n")
 	for i, e := range errs {
-		err += fmt.Sprintf("\tError %d: %s\n", i, e.Error())
+		fmt.Fprintf(&b, "\tError %d: %s\n", i, e.Error())
 	}
 
-	return err
+	return b.String()
 }

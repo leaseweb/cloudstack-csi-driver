@@ -33,6 +33,7 @@ var (
 // ControllerService represents the controller service of CSI driver.
 type ControllerService struct {
 	csi.UnimplementedControllerServer
+
 	// connector is the CloudStack client interface
 	connector cloud.Cloud
 

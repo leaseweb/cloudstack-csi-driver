@@ -115,7 +115,7 @@ func (f *fakeConnector) DeleteVolume(_ context.Context, id string) error {
 
 func (f *fakeConnector) AttachVolume(_ context.Context, volumeID, nodeID string) (string, error) {
 	if f.getVolumesPerServer(nodeID) >= 16 {
-		return "", errors.New("The specified VM already has the maximum number of data disks (16) attached. Please specify another VM.") //nolint:revive,stylecheck
+		return "", errors.New("the specified VM already has the maximum number of data disks (16) attached. Please specify another VM") //nolint:stylecheck
 	}
 
 	if vol, ok := f.volumesByID[volumeID]; ok {

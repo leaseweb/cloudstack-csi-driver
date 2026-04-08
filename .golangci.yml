@@ -1,30 +1,6 @@
-issues:
-  exclude-use-default: true
-  max-issues-per-linter: 50
-  max-same-issues: 0 # disable
-  exclude-rules:
-    - path: _test.go
-      linters:
-        - funlen
-        - gocognit
-        - gocyclo
-        - maintidx
-        - nestif
-
-linters-settings:
-  gci:
-    sections:
-      - standard
-      - default
-      - prefix(github.com/leaseweb/cloudstack-csi-driver)
-  goimports:
-    local-prefixes: github.com/leaseweb/cloudstack-csi-driver
-
-  misspell:
-    locale: US
-
+version: "2"
 linters:
-  enable-all: true
+  default: all
   disable:
     - cyclop
     - depguard
@@ -43,3 +19,56 @@ linters:
     - varnamelen
     - wrapcheck
     - wsl
+    # TODO: The following linters should be enabled in the future
+    - funcorder
+    - wsl_v5
+    - noctx
+    - noinlineerr
+    - modernize
+    - revive
+  settings:
+    misspell:
+      locale: US
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - funlen
+          - gocognit
+          - gocyclo
+          - maintidx
+          - nestif
+        path: _test.go
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+issues:
+  max-issues-per-linter: 50
+  max-same-issues: 0
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+    - goimports
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(github.com/leaseweb/cloudstack-csi-driver)
+    goimports:
+      local-prefixes:
+        - github.com/leaseweb/cloudstack-csi-driver
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

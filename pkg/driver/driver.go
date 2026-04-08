@@ -24,11 +24,12 @@ type Interface interface {
 }
 
 type Driver struct {
+	csi.UnimplementedIdentityServer
+
 	controller *ControllerService
 	node       *NodeService
 	srv        *grpc.Server
 	options    *Options
-	csi.UnimplementedIdentityServer
 }
 
 // NewDriver instantiates a new CloudStack CSI driver.
