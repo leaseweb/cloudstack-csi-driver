@@ -3,7 +3,7 @@ module github.com/leaseweb/cloudstack-csi-driver
 go 1.24.0
 
 require (
-	github.com/apache/cloudstack-go/v2 v2.19.0
+	github.com/apache/cloudstack-go/v2 v2.17.1
 	github.com/container-storage-interface/spec v1.12.0
 	github.com/golang/mock v1.6.0
 	github.com/hashicorp/go-uuid v1.0.3
