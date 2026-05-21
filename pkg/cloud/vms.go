@@ -4,34 +4,31 @@ import (
 	"context"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
-	"k8s.io/klog/v2"
 )
 
 func (c *client) GetVMByID(ctx context.Context, vmID string) (*VM, error) {
-	logger := klog.FromContext(ctx)
 	p := c.VirtualMachine.NewListVirtualMachinesParams()
 	p.SetId(vmID)
 	p.SetListall(true)
 	if c.projectID != "" {
 		p.SetProjectid(c.projectID)
 	}
-	logger.V(2).Info("CloudStack API call", "command", "ListVirtualMachines", "params", map[string]string{
-		"id": vmID,
+	logAPICall(ctx, "ListVirtualMachines", map[string]string{
+		paramID: vmID,
 	})
 
 	return c.listVM(p)
 }
 
 func (c *client) getVMByName(ctx context.Context, name string) (*VM, error) {
-	logger := klog.FromContext(ctx)
 	p := c.VirtualMachine.NewListVirtualMachinesParams()
 	p.SetName(name)
 	p.SetListall(true)
 	if c.projectID != "" {
 		p.SetProjectid(c.projectID)
 	}
-	logger.V(2).Info("CloudStack API call", "command", "ListVirtualMachines", "params", map[string]string{
-		"name": name,
+	logAPICall(ctx, "ListVirtualMachines", map[string]string{
+		paramName: name,
 	})
 
 	return c.listVM(p)
