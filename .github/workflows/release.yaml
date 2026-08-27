@@ -113,7 +113,7 @@ jobs:
           asset_content_type: application/x-yaml
 
       - name: Download cloudstack-csi-sc-syncer artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: bin
           path: bin
