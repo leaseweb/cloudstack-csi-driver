@@ -6,8 +6,10 @@ linters:
     - depguard
     - err113
     - exhaustruct
+    - exhaustruct_v5
     - funlen
     - gochecknoglobals
+    - gomodguard
     - inamedparam
     - interfacebloat
     - ireturn
@@ -37,8 +39,11 @@ linters:
       - legacy
       - std-error-handling
     rules:
+      # Test fixtures repeat literals by nature; complexity metrics on
+      # table-driven tests are noise.
       - linters:
           - funlen
+          - goconst
           - gocognit
           - gocyclo
           - maintidx

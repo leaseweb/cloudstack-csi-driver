@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
-	"k8s.io/klog/v2"
 )
 
 func (c *client) listVolumes(p *cloudstack.ListVolumesParams) (*Volume, error) {
@@ -39,37 +38,33 @@ func (c *client) listVolumes(p *cloudstack.ListVolumesParams) (*Volume, error) {
 }
 
 func (c *client) GetVolumeByID(ctx context.Context, volumeID string) (*Volume, error) {
-	logger := klog.FromContext(ctx)
 	p := c.Volume.NewListVolumesParams()
 	p.SetId(volumeID)
 	if c.projectID != "" {
 		p.SetProjectid(c.projectID)
 	}
-	logger.V(2).Info("CloudStack API call", "command", "ListVolumes", "params", map[string]string{
-		"id":        volumeID,
-		"projectid": c.projectID,
+	logAPICall(ctx, "ListVolumes", map[string]string{
+		paramID:        volumeID,
+		paramProjectID: c.projectID,
 	})
 
 	return c.listVolumes(p)
 }
 
 func (c *client) GetVolumeByName(ctx context.Context, name string) (*Volume, error) {
-	logger := klog.FromContext(ctx)
 	p := c.Volume.NewListVolumesParams()
 	p.SetName(name)
 	if c.projectID != "" {
 		p.SetProjectid(c.projectID)
 	}
-	logger.V(2).Info("CloudStack API call", "command", "ListVolumes", "params", map[string]string{
-		"name": name,
+	logAPICall(ctx, "ListVolumes", map[string]string{
+		paramName: name,
 	})
 
 	return c.listVolumes(p)
 }
 
 func (c *client) CreateVolume(ctx context.Context, diskOfferingID, zoneID, name string, sizeInGB int64) (*Volume, error) {
-	logger := klog.FromContext(ctx)
-
 	if zoneID == "" {
 		// No topology requirement. Use random zone.
 		zones, err := c.ListZonesID(ctx)
@@ -91,11 +86,11 @@ func (c *client) CreateVolume(ctx context.Context, diskOfferingID, zoneID, name 
 	if c.projectID != "" {
 		p.SetProjectid(c.projectID)
 	}
-	logger.V(2).Info("CloudStack API call", "command", "CreateVolume", "params", map[string]string{
-		"diskofferingid": diskOfferingID,
-		"zoneid":         zoneID,
-		"name":           name,
-		"size":           strconv.FormatInt(sizeInGB, 10),
+	logAPICall(ctx, "CreateVolume", map[string]string{
+		paramDiskOfferingID: diskOfferingID,
+		paramZoneID:         zoneID,
+		paramName:           name,
+		paramSize:           strconv.FormatInt(sizeInGB, 10),
 	})
 	vol, err := c.Volume.CreateVolume(p)
 	if err != nil {
@@ -113,10 +108,9 @@ func (c *client) CreateVolume(ctx context.Context, diskOfferingID, zoneID, name 
 }
 
 func (c *client) DeleteVolume(ctx context.Context, id string) error {
-	logger := klog.FromContext(ctx)
 	p := c.Volume.NewDeleteVolumeParams(id)
-	logger.V(2).Info("CloudStack API call", "command", "DeleteVolume", "params", map[string]string{
-		"id": id,
+	logAPICall(ctx, "DeleteVolume", map[string]string{
+		paramID: id,
 	})
 	_, err := c.Volume.DeleteVolume(p)
 	if err != nil && strings.Contains(err.Error(), "4350") {
@@ -128,11 +122,10 @@ func (c *client) DeleteVolume(ctx context.Context, id string) error {
 }
 
 func (c *client) AttachVolume(ctx context.Context, volumeID, vmID string) (string, error) {
-	logger := klog.FromContext(ctx)
 	p := c.Volume.NewAttachVolumeParams(volumeID, vmID)
-	logger.V(2).Info("CloudStack API call", "command", "AttachVolume", "params", map[string]string{
-		"id":               volumeID,
-		"virtualmachineid": vmID,
+	logAPICall(ctx, "AttachVolume", map[string]string{
+		paramID:             volumeID,
+		paramVirtualMachine: vmID,
 	})
 	r, err := c.Volume.AttachVolume(p)
 	if err != nil {
@@ -143,11 +136,10 @@ func (c *client) AttachVolume(ctx context.Context, volumeID, vmID string) (strin
 }
 
 func (c *client) DetachVolume(ctx context.Context, volumeID string) error {
-	logger := klog.FromContext(ctx)
 	p := c.Volume.NewDetachVolumeParams()
 	p.SetId(volumeID)
-	logger.V(2).Info("CloudStack API call", "command", "DetachVolume", "params", map[string]string{
-		"id": volumeID,
+	logAPICall(ctx, "DetachVolume", map[string]string{
+		paramID: volumeID,
 	})
 	_, err := c.Volume.DetachVolume(p)
 
@@ -156,14 +148,12 @@ func (c *client) DetachVolume(ctx context.Context, volumeID string) error {
 
 // ExpandVolume expands the volume to new size.
 func (c *client) ExpandVolume(ctx context.Context, volumeID string, newSizeInGB int64) error {
-	logger := klog.FromContext(ctx)
-
 	p := c.Volume.NewResizeVolumeParams(volumeID)
 	p.SetId(volumeID)
 	p.SetSize(newSizeInGB)
-	logger.V(2).Info("CloudStack API call", "command", "ExpandVolume", "params", map[string]string{
-		"id":   volumeID,
-		"size": strconv.FormatInt(newSizeInGB, 10),
+	logAPICall(ctx, "ExpandVolume", map[string]string{
+		paramID:   volumeID,
+		paramSize: strconv.FormatInt(newSizeInGB, 10),
 	})
 	// Execute the API call to resize the volume.
 	_, err := c.Volume.ResizeVolume(p)
