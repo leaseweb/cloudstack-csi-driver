@@ -13,7 +13,7 @@ require (
 	go.uber.org/mock v0.6.0
 	golang.org/x/sys v0.48.0
 	golang.org/x/text v0.42.0
-	google.golang.org/grpc v1.83.1
+	google.golang.org/grpc v1.83.2
 	gopkg.in/gcfg.v1 v1.2.3
 	k8s.io/api v0.36.4
 	k8s.io/apimachinery v0.36.4
