@@ -11,7 +11,7 @@ plugin for [Apache CloudStack](https://cloudstack.apache.org/).
 
 ### Requirements
 
-- Minimal Kubernetes version: v1.25
+- Minimal Kubernetes version: v1.31
 
 - The Kubernetes cluster must run in CloudStack. Tested only in a KVM zone.
 

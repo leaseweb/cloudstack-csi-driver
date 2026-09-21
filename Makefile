@@ -102,7 +102,7 @@ test-sanity:
 setup-external-e2e: test/e2e/e2e.test test/e2e/ginkgo
 
 test/e2e/e2e.test test/e2e/ginkgo:
-	curl --location https://dl.k8s.io/v1.34.2/kubernetes-test-linux-amd64.tar.gz | \
+	curl --location https://dl.k8s.io/v1.36.4/kubernetes-test-linux-amd64.tar.gz | \
 		tar --strip-components=3 -C test/e2e -zxf - kubernetes/test/bin/e2e.test kubernetes/test/bin/ginkgo 
 
 .PHONY: test-e2e
