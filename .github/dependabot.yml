@@ -35,6 +35,11 @@ updates:
     schedule:
       interval: weekly
       day: sunday
+    # Only raise version-update PRs for dependencies listed explicitly in
+    # go.mod. Transitive modules (those pulled in by k8s.io/*, grpc, etc.)
+    # are left to move with whatever requires them.
+    allow:
+      - dependency-type: "direct"
     ignore:
       - dependency-name: "k8s.io/api"
         update-types: ["version-update:semver-minor"]
@@ -43,8 +48,6 @@ updates:
       - dependency-name: "k8s.io/component-base"
         update-types: ["version-update:semver-minor"]
       - dependency-name: "k8s.io/client-go"
-        update-types: ["version-update:semver-minor"]
-      - dependency-name: "k8s.io/component-base"
         update-types: ["version-update:semver-minor"]
       - dependency-name: "k8s.io/mount-utils"
         update-types: ["version-update:semver-minor"]
