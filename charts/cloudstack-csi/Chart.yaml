@@ -2,8 +2,8 @@ apiVersion: v2
 name: cloudstack-csi
 description: A Helm chart for CloudStack CSI driver
 type: application
-version: 2.7.0
-appVersion: 0.13.0
+version: 2.8.0
+appVersion: 0.14.0
 sources:
   - https://github.com/Leaseweb/cloudstack-csi-driver
 keywords:
