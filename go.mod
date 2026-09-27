@@ -6,7 +6,7 @@ require (
 	github.com/apache/cloudstack-go/v2 v2.17.1
 	github.com/container-storage-interface/spec v1.13.0
 	github.com/golang/mock v1.6.0
-	github.com/hashicorp/go-uuid v1.0.3
+	github.com/hashicorp/go-uuid v1.0.4
 	github.com/kubernetes-csi/csi-test/v5 v5.6.0
 	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.12.1
