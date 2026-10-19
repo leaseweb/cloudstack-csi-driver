@@ -5,55 +5,61 @@ version: 2
 updates:
   - package-ecosystem: github-actions
     directory: /
+    schedule:
+      interval: weekly
+      day: sunday
+    groups:
+      all-github-actions:
+        patterns: [ "*" ]
+    commit-message:
+      prefix: ":seedling:"
     labels:
       - dependencies
       - actions
-    schedule:
-      interval: weekly
-      day: sunday
   - package-ecosystem: docker
     directory: /cmd/cloudstack-csi-sc-syncer
-    labels:
-      - dependencies
-      - docker
     schedule:
       interval: weekly
       day: sunday
+    labels:
+      - dependencies
+      - docker
   - package-ecosystem: docker
     directory: /cmd/cloudstack-csi-driver
+    schedule:
+      interval: weekly
+      day: sunday
     labels:
       - dependencies
       - docker
-    schedule:
-      interval: weekly
-      day: sunday
   - package-ecosystem: gomod
     directory: /
-    labels:
-      - dependencies
-      - go
     schedule:
       interval: weekly
       day: sunday
+    ## group all dependencies into a single PR.
+    groups:
+      all-go-mod-patch-and-minor:
+        patterns: [ "*" ]
+        update-types: [ "patch", "minor" ]
     # Only raise version-update PRs for dependencies listed explicitly in
     # go.mod. Transitive modules (those pulled in by k8s.io/*, grpc, etc.)
     # are left to move with whatever requires them.
     allow:
       - dependency-type: "direct"
     ignore:
-      - dependency-name: "k8s.io/api"
-        update-types: ["version-update:semver-minor"]
-      - dependency-name: "k8s.io/apimachinery"
-        update-types: ["version-update:semver-minor"]
-      - dependency-name: "k8s.io/component-base"
-        update-types: ["version-update:semver-minor"]
-      - dependency-name: "k8s.io/client-go"
-        update-types: ["version-update:semver-minor"]
-      - dependency-name: "k8s.io/mount-utils"
-        update-types: ["version-update:semver-minor"]
+      - dependency-name: "k8s.io/*"
+        update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
       - dependency-name: "github.com/container-storage-interface/spec"
         update-types: ["version-update:semver-minor"]
       - dependency-name: "github.com/kubernetes-csi/csi-test/v5"
         update-types: ["version-update:semver-minor"]
       - dependency-name: "github.com/kubernetes-csi/csi-lib-utils"
         update-types: ["version-update:semver-minor"]
+        # Ignore the CloudStack Go SDK as its version is pinned and upgraded manually.
+      - dependency-name: "github.com/apache/cloudstack-go/v2"
+    commit-message:
+      prefix: ":seedling:"
+    labels:
+      - dependencies
+      - go
