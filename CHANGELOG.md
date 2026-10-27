@@ -13,6 +13,17 @@ Routine CI, linter and transitive dependency bumps are omitted. Kubernetes
 library bumps are listed, since they determine which Kubernetes releases the
 driver is built and tested against.
 
+## [v0.14.1] - 2026-10-27
+
+### Changed
+
+- Updated Kubernetes libraries to `v0.36.5`.
+- Bumped the remaining direct Go dependencies (`go-uuid`, `golang.org/x/sys`,
+  `golang.org/x/text`).
+- External e2e test binaries now pull Kubernetes v1.36.5 instead of v1.36.4.
+- Dependabot now groups Go module patch and minor updates, and all GitHub
+  Actions updates, into one PR each.
+
 ## [v0.14.0] - 2026-09-21
 
 ### Changed
@@ -250,6 +261,7 @@ driver is built and tested against.
 Initial release, built against Kubernetes libraries `v0.25.10` and CSI spec
 v1.6.0.
 
+[v0.14.1]: https://github.com/leaseweb/cloudstack-csi-driver/compare/v0.14.0...v0.14.1
 [v0.14.0]: https://github.com/leaseweb/cloudstack-csi-driver/compare/v0.13.0...v0.14.0
 [v0.13.0]: https://github.com/leaseweb/cloudstack-csi-driver/compare/v0.12.1...v0.13.0
 [v0.12.1]: https://github.com/leaseweb/cloudstack-csi-driver/compare/v0.12.0...v0.12.1
