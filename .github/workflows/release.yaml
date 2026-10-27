@@ -91,41 +91,19 @@ jobs:
           echo "---" >> manifest.yaml
           sed -E "s|image: +cloudstack-csi-driver|image: ${REGISTRY_NAME}/cloudstack-csi-driver:${VERSION}|" deploy/k8s/node-daemonset.yaml >> manifest.yaml
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: ${{ github.ref }}
-          draft: false
-          prerelease: false
-
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: manifest.yaml
-          asset_name: manifest.yaml
-          asset_content_type: application/x-yaml
-
       - name: Download cloudstack-csi-sc-syncer artifact
         uses: actions/download-artifact@v8
         with:
           name: bin
           path: bin
 
-      - run: ls -l
-
-      - name: Upload cloudstack-csi-sc-syncer asset
-        uses: actions/upload-release-asset@v1
+      - name: Create Release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: bin/cloudstack-csi-sc-syncer
-          asset_name: cloudstack-csi-sc-syncer
-          asset_content_type: application/x-executable
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            --title "${{ github.ref_name }}" \
+            --notes "" \
+            --verify-tag \
+            manifest.yaml \
+            bin/cloudstack-csi-sc-syncer
