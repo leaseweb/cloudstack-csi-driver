@@ -71,6 +71,10 @@ jobs:
     name: Release
     runs-on: ubuntu-24.04
 
+    # Needed by softprops/action-gh-release to create the release and upload assets
+    permissions:
+      contents: write
+
     # Run only if previous job has succeeded
     needs: [push]
 
@@ -99,13 +103,15 @@ jobs:
           name: bin
           path: bin
 
-      - name: Create Release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release create "${{ github.ref_name }}" \
-            --title "${{ github.ref_name }}" \
-            --notes "" \
-            --verify-tag \
-            manifest.yaml \
+      # tag_name and name both default to github.ref_name, so the release is
+      # titled with the bare tag (v1.2.3) rather than the full ref.
+      - name: Create release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: |
+            manifest.yaml
             bin/cloudstack-csi-sc-syncer
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          draft: false
+          prerelease: false
