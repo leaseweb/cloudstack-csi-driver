@@ -20,6 +20,7 @@ driver is built and tested against.
 - Updated Kubernetes libraries to `v0.36.5`.
 - Bumped the remaining direct Go dependencies (`go-uuid`, `golang.org/x/sys`,
   `golang.org/x/text`).
+- External e2e test binaries now pull Kubernetes v1.36.5 instead of v1.36.4.
 - Dependabot now groups Go module patch and minor updates, and all GitHub
   Actions updates, into one PR each.
 
