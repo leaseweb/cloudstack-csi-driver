@@ -23,7 +23,9 @@ var (
 	deleteUnused     = flag.Bool("delete", false, "Delete")
 	volumeExpansion  = flag.Bool("volumeExpansion", false, "VolumeExpansion")
 	showVersion      = flag.Bool("version", false, "Show version")
-
+	nodeName         = flag.String("nodeName", "", "Node name")
+	addAllowedTopology = flag.Bool("addAllowedTopology", false, "Add allowed topology to storageclass")
+	
 	// Version is set by the build process.
 	version = ""
 )
@@ -46,6 +48,8 @@ func main() {
 		NamePrefix:       *namePrefix,
 		Delete:           *deleteUnused,
 		VolumeExpansion:  *volumeExpansion,
+		NodeName:         *nodeName,
+		AddAllowedTopology: *addAllowedTopology,
 	})
 	if err != nil {
 		log.Fatalf("Error: %v", err)

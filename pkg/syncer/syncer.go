@@ -27,6 +27,8 @@ type Config struct {
 	NamePrefix       string
 	Delete           bool
 	VolumeExpansion  bool
+	NodeName         string
+	AddAllowedTopology bool
 }
 
 // Syncer has a function Run which synchronizes CloudStack
@@ -43,6 +45,9 @@ type syncer struct {
 	namePrefix      string
 	delete          bool
 	volumeExpansion bool
+	csConnector     cloud.Cloud
+	nodeName        string
+	addAllowedTopology bool
 }
 
 func createK8sClient(kubeconfig, agent string) (*kubernetes.Clientset, error) {
@@ -74,6 +79,17 @@ func createCloudStackClient(cloudstackconfig string) (*cloudstack.CloudStackClie
 	return client, nil
 }
 
+func createCSConnector(cloudstackconfig string) (cloud.Cloud, error) {
+	config, err := cloud.ReadConfig(cloudstackconfig)
+	if err != nil {
+		return nil, err
+	}
+
+	csConnector := cloud.New(config)
+
+	return csConnector, nil
+}
+
 func createLabelsSet(label string) labels.Set {
 	m := make(map[string]string)
 	if len(label) > 0 {
@@ -100,6 +116,12 @@ func New(config Config) (Syncer, error) {
 		return nil, fmt.Errorf("cannot create CloudStack client: %w", err)
 	}
 
+	csConnector, err := createCSConnector(config.CloudStackConfig)
+	if err != nil {
+			return nil, fmt.Errorf("cannot create CS connector interface: %w", err)
+		}
+
+
 	return syncer{
 		k8sClient:       k8sClient,
 		csClient:        csClient,
@@ -107,5 +129,8 @@ func New(config Config) (Syncer, error) {
 		namePrefix:      config.NamePrefix,
 		delete:          config.Delete,
 		volumeExpansion: config.VolumeExpansion,
+		csConnector:        csConnector,
+		nodeName:           config.NodeName,
+		addAllowedTopology: config.AddAllowedTopology,
 	}, nil
 }
